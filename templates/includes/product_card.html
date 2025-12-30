@@ -1,0 +1,52 @@
+<!-- templates/includes/product_card.html -->
+<div class="product-card">
+    {% if product.has_discount %}
+    <div class="discount-badge">
+        -{{ product.discount_percent|floatformat:0 }}%
+    </div>
+    {% endif %}
+    
+    <a href="{% url 'product_detail' product.get_slug_or_id %}">
+        <img src="{{ product.preview_image.url }}" 
+             class="product-image" 
+             alt="{{ product.name }}"
+             loading="lazy">
+    </a>
+    
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge category-badge">{{ product.get_product_type_display }}</span>
+            <small class="text-muted">
+                <i class="fas fa-download me-1"></i> {{ product.sales_count }}
+            </small>
+        </div>
+        
+        <h5 class="card-title">
+            <a href="{% url 'product_detail' product.get_slug_or_id %}" 
+               class="text-decoration-none text-dark">
+                {{ product.name|truncatechars:50 }}
+            </a>
+        </h5>
+        
+        <p class="card-text text-muted small">{{ product.short_description|truncatechars:80 }}</p>
+        
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                {% if product.has_discount %}
+                <div class="product-price">₽{{ product.current_price }}</div>
+                <div class="product-price-old">₽{{ product.price }}</div>
+                {% else %}
+                <div class="product-price">₽{{ product.price }}</div>
+                {% endif %}
+            </div>
+            
+            <form action="{% url 'cart_add' product.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-cart-plus"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

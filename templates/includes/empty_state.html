@@ -1,0 +1,31 @@
+<!-- templates/includes/empty_state.html -->
+<div class="empty-state text-center py-5">
+    {% if icon %}
+    <i class="fas fa-{{ icon }} fa-4x text-muted mb-4"></i>
+    {% else %}
+    <i class="fas fa-box-open fa-4x text-muted mb-4"></i>
+    {% endif %}
+    
+    <h3 class="h4 mb-3">{{ title|default:"Ничего не найдено" }}</h3>
+    
+    {% if message %}
+    <p class="text-muted mb-4">{{ message }}</p>
+    {% endif %}
+    
+    {% if actions %}
+    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+        {% for action in actions %}
+        <a href="{{ action.url }}" class="btn {{ action.class|default:'btn-primary' }}">
+            {% if action.icon %}<i class="fas fa-{{ action.icon }} me-2"></i>{% endif %}
+            {{ action.text }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.empty-state {
+    padding: 60px 20px;
+}
+</style>

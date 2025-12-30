@@ -1,0 +1,106 @@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="mobileNavLabel">
+            <i class="fas fa-shopping-cart text-primary me-2"></i> DigiMart
+        </h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <!-- Поиск в мобильном меню -->
+        <div class="mb-4">
+            <form action="{% url 'search' %}" method="get">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Поиск..." name="q">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Основное меню -->
+        <ul class="nav flex-column mb-4">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'home' %}">
+                    <i class="fas fa-home me-3"></i> Главная
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'all_products' %}">
+                    <i class="fas fa-box me-3"></i> Все товары
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'cart_detail' %}">
+                    <i class="fas fa-shopping-cart me-3"></i> Корзина
+                    <span class="badge bg-primary float-end">{{ cart_items_count|default:0 }}</span>
+                </a>
+            </li>
+            {% if user.is_authenticated %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'profile' %}">
+                    <i class="fas fa-user me-3"></i> Профиль
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'order_list' %}">
+                    <i class="fas fa-history me-3"></i> Мои заказы
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <!-- Категории -->
+        <h6 class="text-uppercase text-muted mb-3">Категории</h6>
+        <ul class="nav flex-column mb-4">
+            {% for category in categories|slice:":5" %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'category_detail' category.slug %}">
+                    <i class="fas fa-folder me-3"></i> {{ category.name }}
+                </a>
+            </li>
+            {% endfor %}
+            <li class="nav-item">
+                <a class="nav-link text-primary" href="{% url 'all_products' %}">
+                    <i class="fas fa-ellipsis-h me-3"></i> Все категории
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Информация -->
+        <h6 class="text-uppercase text-muted mb-3">Информация</h6>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'about' %}">
+                    <i class="fas fa-info-circle me-3"></i> О нас
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'contacts' %}">
+                    <i class="fas fa-phone me-3"></i> Контакты
+                </a>
+            </li>
+        </ul>
+        
+        <hr class="my-4">
+        
+        <!-- Авторизация -->
+        {% if user.is_authenticated %}
+        <div class="text-center">
+            <p class="small text-muted mb-2">Вы вошли как {{ user.username }}</p>
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger w-100">
+                <i class="fas fa-sign-out-alt me-2"></i> Выйти
+            </a>
+        </div>
+        {% else %}
+        <div class="d-grid gap-2">
+            <a href="{% url 'login' %}" class="btn btn-outline-primary">
+                <i class="fas fa-sign-in-alt me-2"></i> Войти
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i> Регистрация
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>

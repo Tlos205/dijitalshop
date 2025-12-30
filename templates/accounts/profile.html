@@ -1,0 +1,733 @@
+<!-- templates/accounts/profile.html -->
+{% extends 'base.html' %}
+
+{% block title %}Личный кабинет - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Боковое меню -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="tab">
+                            <i class="fas fa-user-circle me-2"></i>Профиль
+                        </a>
+                        <a href="#orders" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                            <i class="fas fa-shopping-bag me-2"></i>Мои заказы
+                            <span class="badge bg-primary rounded-pill float-end">{{ orders_count|default:0 }}</span>
+                        </a>
+                        <a href="#downloads" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                            <i class="fas fa-download me-2"></i>Мои файлы
+                        </a>
+                        <a href="#wishlist" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                            <i class="fas fa-heart me-2"></i>Избранное
+                            <span class="badge bg-danger rounded-pill float-end">{{ wishlist_count|default:0 }}</span>
+                        </a>
+                        <a href="#settings" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                            <i class="fas fa-cog me-2"></i>Настройки
+                        </a>
+                        <a href="{% url 'logout' %}" class="list-group-item list-group-item-action text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Статистика -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">
+                        <i class="fas fa-chart-bar me-2"></i>Статистика
+                    </h6>
+                    
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="display-6 fw-bold text-primary">{{ orders_count|default:0 }}</div>
+                            <small class="text-muted">Заказов</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="display-6 fw-bold text-success">{{ total_spent|default:0 }}₽</div>
+                            <small class="text-muted">Потрачено</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <a href="{% url 'all_products' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-shopping-cart me-2"></i>Купить еще
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="col-lg-9">
+            <div class="tab-content">
+                <!-- Вкладка профиля -->
+                <div class="tab-pane fade show active" id="profile">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user-circle me-2"></i>Мой профиль
+                            </h5>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="row align-items-center mb-4">
+                                <div class="col-md-3 text-center">
+                                    <div class="avatar-lg mx-auto mb-3">
+                                        <div class="avatar-placeholder rounded-circle bg-primary d-flex align-items-center justify-content-center" 
+                                             style="width: 120px; height: 120px; margin: 0 auto;">
+                                            <span class="display-4 text-white">{{ user.username|first|upper }}</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-camera me-2"></i>Изменить фото
+                                    </button>
+                                </div>
+                                
+                                <div class="col-md-9">
+                                    <h3 class="mb-1">Привет, {{ user.first_name|default:user.username }}!</h3>
+                                    <p class="text-muted mb-3">
+                                        Добро пожаловать в ваш личный кабинет. Здесь вы можете управлять заказами и настройками.
+                                    </p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label small text-muted">Email</label>
+                                                <p class="mb-0">{{ user.email|default:"Не указан" }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label small text-muted">Дата регистрации</label>
+                                                <p class="mb-0">{{ user.date_joined|date:"d.m.Y" }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Форма редактирования профиля -->
+                            <form method="post" novalidate>
+                                {% csrf_token %}
+                                
+                                <h6 class="mb-3">Контактная информация</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Имя</label>
+                                        <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Фамилия</label>
+                                        <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" name="email" value="{{ user.email }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Телефон</label>
+                                        <input type="tel" class="form-control" name="phone" value="{{ user.profile.phone|default:'' }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">О себе</label>
+                                    <textarea class="form-control" name="bio" rows="3">{{ user.profile.bio|default:'' }}</textarea>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Сохранить изменения
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                        <i class="fas fa-key me-2"></i>Изменить пароль
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Недавние заказы -->
+                    <div class="card border-0 shadow-sm mt-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history me-2"></i>Недавние заказы
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_orders %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>№ Заказа</th>
+                                            <th>Дата</th>
+                                            <th>Товары</th>
+                                            <th>Сумма</th>
+                                            <th>Статус</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in recent_orders %}
+                                        <tr>
+                                            <td>
+                                                <a href="#" class="text-primary text-decoration-none">
+                                                    {{ order.order_number|truncatechars:10 }}
+                                                </a>
+                                            </td>
+                                            <td>{{ order.created_at|date:"d.m.Y" }}</td>
+                                            <td>{{ order.items.count }} товар(ов)</td>
+                                            <td>₽{{ order.total }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ order.status_color }}">
+                                                    {{ order.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <a href="#orders" class="btn btn-outline-primary" data-bs-toggle="tab">
+                                    Все заказы
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                                <p class="lead">У вас еще нет заказов</p>
+                                <a href="{% url 'all_products' %}" class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart me-2"></i>Сделать первый заказ
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вкладка заказов -->
+                <div class="tab-pane fade" id="orders">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-shopping-bag me-2"></i>Мои заказы
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if orders %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>№ Заказа</th>
+                                            <th>Дата</th>
+                                            <th>Товары</th>
+                                            <th>Сумма</th>
+                                            <th>Статус</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in orders %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ order.order_number }}</strong>
+                                            </td>
+                                            <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-2">
+                                                        {% for item in order.items.all|slice:":2" %}
+                                                        <img src="{{ item.product.preview_image.url }}" 
+                                                             class="rounded" 
+                                                             style="width: 40px; height: 40px; object-fit: cover;"
+                                                             alt="{{ item.product.name }}">
+                                                        {% endfor %}
+                                                    </div>
+                                                    <div>
+                                                        {{ order.items.count }} товар(ов)
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold">₽{{ order.total }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ order.status_color }}">
+                                                    {{ order.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if order.status == 'pending' %}
+                                                    <a href="#" class="btn btn-outline-success">
+                                                        <i class="fas fa-credit-card"></i>
+                                                    </a>
+                                                    {% endif %}
+                                                    <a href="#" class="btn btn-outline-secondary">
+                                                        <i class="fas fa-print"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Пагинация -->
+                            {% if is_paginated %}
+                            <nav aria-label="Навигация по заказам">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+                                    </li>
+                                    {% endif %}
+                                    
+                                    {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед</a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            {% endif %}
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-shopping-bag fa-4x text-muted mb-4"></i>
+                                <h4 class="mb-3">Заказов пока нет</h4>
+                                <p class="text-muted mb-4">Совершите первую покупку, и она появится здесь</p>
+                                <a href="{% url 'all_products' %}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-shopping-cart me-2"></i>Перейти к покупкам
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вкладка загрузок -->
+                <div class="tab-pane fade" id="downloads">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-download me-2"></i>Мои файлы
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Все купленные файлы доступны для скачивания в течение 1 года с момента покупки.
+                            </div>
+                            
+                            {% if downloadable_products %}
+                            <div class="row">
+                                {% for product in downloadable_products %}
+                                <div class="col-md-6 mb-4">
+                                    <div class="card border h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex">
+                                                <img src="{{ product.preview_image.url }}" 
+                                                     class="rounded me-3" 
+                                                     style="width: 80px; height: 80px; object-fit: cover;"
+                                                     alt="{{ product.name }}">
+                                                <div>
+                                                    <h6 class="mb-1">{{ product.name|truncatechars:50 }}</h6>
+                                                    <p class="small text-muted mb-2">
+                                                        Куплено: {{ product.purchase_date|date:"d.m.Y" }}
+                                                    </p>
+                                                    <div class="d-flex gap-2">
+                                                        <a href="#" class="btn btn-sm btn-primary">
+                                                            <i class="fas fa-download me-2"></i>Скачать
+                                                        </a>
+                                                        <a href="{% url 'product_detail' product.get_slug_or_id %}" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-external-link-alt"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-cloud-download-alt fa-4x text-muted mb-4"></i>
+                                <h4 class="mb-3">Нет доступных файлов</h4>
+                                <p class="text-muted mb-4">После покупки товары появятся здесь</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вкладка избранного -->
+                <div class="tab-pane fade" id="wishlist">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-heart me-2"></i>Избранное
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if wishlist_items %}
+                            <div class="row">
+                                {% for item in wishlist_items %}
+                                <div class="col-md-4 mb-4">
+                                    <div class="product-card h-100">
+                                        <a href="{% url 'product_detail' item.product.get_slug_or_id %}">
+                                            <img src="{{ item.product.preview_image.url }}" 
+                                                 class="product-image" 
+                                                 alt="{{ item.product.name }}">
+                                        </a>
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <a href="{% url 'product_detail' item.product.get_slug_or_id %}" class="text-decoration-none text-dark">
+                                                    {{ item.product.name|truncatechars:40 }}
+                                                </a>
+                                            </h6>
+                                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                                <div class="product-price">₽{{ item.product.current_price }}</div>
+                                                <div class="btn-group">
+                                                    <form action="{% url 'cart_add' item.product.id %}" method="post" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="quantity" value="1">
+                                                        <button type="submit" class="btn btn-primary btn-sm">
+                                                            <i class="fas fa-cart-plus"></i>
+                                                        </button>
+                                                    </form>
+                                                    <button class="btn btn-outline-danger btn-sm remove-wishlist" data-id="{{ item.id }}">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-heart fa-4x text-muted mb-4"></i>
+                                <h4 class="mb-3">Избранное пусто</h4>
+                                <p class="text-muted mb-4">Добавляйте товары в избранное, чтобы не потерять</p>
+                                <a href="{% url 'all_products' %}" class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart me-2"></i>Найти товары
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вкладка настроек -->
+                <div class="tab-pane fade" id="settings">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-cog me-2"></i>Настройки
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" novalidate>
+                                {% csrf_token %}
+                                
+                                <div class="mb-4">
+                                    <h6 class="mb-3">Уведомления</h6>
+                                    
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                        <label class="form-check-label" for="emailNotifications">
+                                            Email уведомления о заказах
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="promoEmails" checked>
+                                        <label class="form-check-label" for="promoEmails">
+                                            Специальные предложения и акции
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="newsletter">
+                                        <label class="form-check-label" for="newsletter">
+                                            Еженедельная рассылка новостей
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6 class="mb-3">Приватность</h6>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="showProfile">
+                                        <label class="form-check-label" for="showProfile">
+                                            Показывать мой профиль другим пользователям
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="showPurchases">
+                                        <label class="form-check-label" for="showPurchases">
+                                            Показывать мои покупки в публичном профиле
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="showReviews">
+                                        <label class="form-check-label" for="showReviews">
+                                            Показывать мои отзывы с именем
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6 class="mb-3">Безопасность</h6>
+                                    
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Последний вход: {{ user.last_login|date:"d.m.Y H:i"|default:"Недавно" }}
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#sessionsModal">
+                                            <i class="fas fa-desktop me-2"></i>Управление сессиями
+                                        </button>
+                                        
+                                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                            <i class="fas fa-trash me-2"></i>Удалить аккаунт
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Сохранить настройки
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-outline-secondary" id="exportData">
+                                        <i class="fas fa-download me-2"></i>Экспорт данных
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно смены пароля -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key me-2"></i>Смена пароля
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <div class="mb-3">
+                        <label class="form-label">Текущий пароль</label>
+                        <input type="password" class="form-control" name="current_password" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Новый пароль</label>
+                        <input type="password" class="form-control" name="new_password1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Повторите новый пароль</label>
+                        <input type="password" class="form-control" name="new_password2" required>
+                    </div>
+                    
+                    <div class="alert alert-light border small">
+                        <h6 class="alert-heading">Требования к паролю:</h6>
+                        <ul class="mb-0">
+                            <li>Не менее 8 символов</li>
+                            <li>Не должен быть слишком простым</li>
+                            <li>Не должен состоять только из цифр</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" form="changePasswordForm" class="btn btn-primary">Сменить пароль</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .avatar-placeholder {
+        background: linear-gradient(135deg, #6f42c1, #fd7e14);
+    }
+    
+    .list-group-item.active {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    
+    .list-group-item-action {
+        transition: all 0.3s ease;
+    }
+    
+    .list-group-item-action:hover {
+        background-color: rgba(111, 66, 193, 0.1);
+        border-left: 3px solid #6f42c1;
+        padding-left: 13px;
+    }
+    
+    .badge.bg-pending { background-color: #ffc107; }
+    .badge.bg-paid { background-color: #20c997; }
+    .badge.bg-processing { background-color: #0dcaf0; }
+    .badge.bg-completed { background-color: #198754; }
+    .badge.bg-cancelled { background-color: #dc3545; }
+    
+    .product-card .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .form-switch .form-check-input:checked {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Активация вкладок из URL hash
+        const urlHash = window.location.hash;
+        if (urlHash) {
+            const tabTrigger = document.querySelector(`a[href="${urlHash}"]`);
+            if (tabTrigger) {
+                const tab = new bootstrap.Tab(tabTrigger);
+                tab.show();
+            }
+        }
+        
+        // Удаление из избранного
+        document.querySelectorAll('.remove-wishlist').forEach(button => {
+            button.addEventListener('click', function() {
+                const itemId = this.getAttribute('data-id');
+                const productCard = this.closest('.col-md-4');
+                
+                if (confirm('Удалить товар из избранного?')) {
+                    // Здесь будет AJAX запрос на удаление
+                    productCard.style.opacity = '0.5';
+                    
+                    setTimeout(() => {
+                        productCard.remove();
+                        
+                        // Обновить счетчик
+                        const wishlistCount = document.querySelector('a[href="#wishlist"] .badge');
+                        if (wishlistCount) {
+                            let count = parseInt(wishlistCount.textContent);
+                            if (count > 0) {
+                                wishlistCount.textContent = count - 1;
+                            }
+                        }
+                    }, 300);
+                }
+            });
+        });
+        
+        // Смена пароля
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        if (changePasswordForm) {
+            changePasswordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const newPassword1 = formData.get('new_password1');
+                const newPassword2 = formData.get('new_password2');
+                
+                if (newPassword1 !== newPassword2) {
+                    alert('Новые пароли не совпадают');
+                    return;
+                }
+                
+                if (newPassword1.length < 8) {
+                    alert('Пароль должен содержать не менее 8 символов');
+                    return;
+                }
+                
+                // Здесь будет AJAX запрос на смену пароля
+                alert('Пароль успешно изменен!');
+                bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+            });
+        }
+        
+        // Экспорт данных
+        const exportBtn = document.getElementById('exportData');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function() {
+                if (confirm('Будет создан архив с вашими данными. Продолжить?')) {
+                    // Здесь будет AJAX запрос на экспорт данных
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Подготовка...';
+                    this.disabled = true;
+                    
+                    setTimeout(() => {
+                        alert('Запрос на экспорт данных отправлен. Файл будет доступен для скачивания в течение 24 часов.');
+                        this.innerHTML = '<i class="fas fa-download me-2"></i>Экспорт данных';
+                        this.disabled = false;
+                    }, 2000);
+                }
+            });
+        }
+        
+        // Сохранение настроек
+        const settingsForm = document.querySelector('#settings form');
+        if (settingsForm) {
+            settingsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Здесь будет AJAX запрос на сохранение настроек
+                alert('Настройки успешно сохранены!');
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

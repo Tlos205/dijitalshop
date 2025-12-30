@@ -1,0 +1,109 @@
+<!-- templates/emails/registration_success.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добро пожаловать в DigiMart!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #6f42c1, #fd7e14);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .footer {
+            background-color: #343a40;
+            color: #adb5bd;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #6f42c1, #fd7e14);
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .highlight {
+            background-color: #f8f9fa;
+            border-left: 4px solid #6f42c1;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Добро пожаловать в DigiMart!</h1>
+            <p>Рады видеть вас в нашем сообществе</p>
+        </div>
+        
+        <div class="content">
+            <h2>Привет, {{ username }}!</h2>
+            <p>Спасибо за регистрацию в нашем магазине цифровых товаров. Ваш аккаунт успешно создан.</p>
+            
+            <div class="highlight">
+                <p><strong>Ваши данные:</strong></p>
+                <p>Логин: {{ email }}</p>
+                <p>Дата регистрации: {{ registration_date|date:"d.m.Y" }}</p>
+            </div>
+            
+            <p>Теперь вы можете:</p>
+            <ul>
+                <li>Покупать цифровые товары с мгновенной доставкой</li>
+                <li>Отслеживать историю заказов</li>
+                <li>Скачивать купленные товары в любое время</li>
+                <li>Получать специальные предложения</li>
+            </ul>
+            
+            <div style="text-align: center;">
+                <a href="{{ site_url }}{% url 'all_products' %}" class="btn">
+                    Начать покупки
+                </a>
+            </div>
+            
+            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+                <strong>Важная информация:</strong><br>
+                Сохраните это письмо. Если у вас возникнут вопросы, вы всегда можете обратиться в нашу службу поддержки.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {% now "Y" %} DigiMart. Все права защищены.</p>
+            <p>
+                <a href="{{ site_url }}" style="color: #adb5bd; text-decoration: none;">{{ site_url }}</a> |
+                <a href="{{ site_url }}{% url 'contacts' %}" style="color: #adb5bd; text-decoration: none;">Контакты</a> |
+                <a href="{{ site_url }}{% url 'about' %}" style="color: #adb5bd; text-decoration: none;">О нас</a>
+            </p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                Это автоматическое сообщение, пожалуйста, не отвечайте на него.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

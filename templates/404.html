@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Страница не найдена - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <div class="error-state">
+                <div class="display-1 text-muted mb-4">404</div>
+                <i class="fas fa-exclamation-triangle fa-4x text-warning mb-4"></i>
+                <h1 class="h2 mb-4">Страница не найдена</h1>
+                <p class="lead text-muted mb-5">
+                    К сожалению, страница, которую вы ищете, не существует или была перемещена.
+                </p>
+                
+                <div class="row g-3 justify-content-center">
+                    <div class="col-md-4">
+                        <a href="{% url 'home' %}" class="btn btn-primary w-100">
+                            <i class="fas fa-home me-2"></i> На главную
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'all_products' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-store me-2"></i> Все товары
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <button onclick="history.back()" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-arrow-left me-2"></i> Назад
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-5">
+                    <h5 class="h6 mb-3">Возможно, вы искали:</h5>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <a href="{% url 'all_products' %}" class="btn btn-sm btn-outline-primary">
+                            Все товары
+                        </a>
+                        <a href="{% url 'about' %}" class="btn btn-sm btn-outline-primary">
+                            О нас
+                        </a>
+                        <a href="{% url 'contacts' %}" class="btn btn-sm btn-outline-primary">
+                            Контакты
+                        </a>
+                        <a href="{% url 'search' %}" class="btn btn-sm btn-outline-primary">
+                            Поиск товаров
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-state {
+    padding: 60px 0;
+}
+.display-1 {
+    font-weight: 900;
+    opacity: 0.1;
+}
+</style>
+{% endblock %}

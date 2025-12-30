@@ -1,0 +1,436 @@
+<!-- templates/orders/create_order.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Оформление заказа - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Шаги оформления -->
+            <div class="mb-5">
+                <div class="steps">
+                    <div class="step active">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Корзина</div>
+                    </div>
+                    <div class="step active">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Оформление</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Оплата</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Завершение</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h1 class="h2 mb-4">
+                <i class="fas fa-clipboard-check text-primary me-2"></i>Оформление заказа
+            </h1>
+            
+            <!-- Форма заказа -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle me-2"></i>Контактная информация
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate id="orderForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.email|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.first_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.last_name|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <!-- Комментарий к заказу -->
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Комментарий к заказу (необязательно)</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" 
+                                      placeholder="Укажите дополнительные пожелания или информацию"></textarea>
+                        </div>
+                        
+                        <!-- Соглашения -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                                <label class="form-check-label small" for="agreeTerms">
+                                    Я соглашаюсь с <a href="#" class="text-primary">Условиями продажи</a> 
+                                    и подтверждаю, что ознакомлен с <a href="#" class="text-primary">Политикой конфиденциальности</a>
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="subscribeNews" checked>
+                                <label class="form-check-label small" for="subscribeNews">
+                                    Подписаться на новости и специальные предложения
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Способ оплаты -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Способ оплаты
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="payment-methods">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="yandexMoney" value="yandex" checked>
+                            <label class="form-check-label" for="yandexMoney">
+                                <div class="d-flex align-items-center">
+                                    <i class="fab fa-yandex fa-2x text-danger me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">ЮMoney (бывшие Яндекс.Деньги)</h6>
+                                        <p class="small text-muted mb-0">Оплата банковской картой или через ЮMoney</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="bankCard" value="card">
+                            <label class="form-check-label" for="bankCard">
+                                <div class="d-flex align-items-center">
+                                    <div class="d-flex gap-2 me-3">
+                                        <i class="fab fa-cc-visa fa-2x text-primary"></i>
+                                        <i class="fab fa-cc-mastercard fa-2x text-danger"></i>
+                                        <i class="fab fa-cc-mir fa-2x text-orange"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Банковская карта</h6>
+                                        <p class="small text-muted mb-0">Visa, Mastercard, МИР</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="sberbank" value="sber">
+                            <label class="form-check-label" for="sberbank">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-university fa-2x text-success me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">Сбербанк Онлайн</h6>
+                                        <p class="small text-muted mb-0">Оплата через интернет-банк Сбербанка</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Итог заказа -->
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shopping-bag me-2"></i>Ваш заказ
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Товары в заказе -->
+                    <div class="order-items mb-4">
+                        {% for item in cart_items %}
+                        <div class="d-flex mb-3 pb-3 border-bottom">
+                            <img src="{{ item.product.preview_image.url }}" 
+                                 class="rounded me-3" 
+                                 style="width: 60px; height: 60px; object-fit: cover;"
+                                 alt="{{ item.product.name }}">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ item.product.name|truncatechars:40 }}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small">x{{ item.quantity }}</span>
+                                    <span class="fw-bold">₽{{ item.total_price }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Стоимость -->
+                    <div class="order-summary mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Сумма товаров:</span>
+                            <span class="fw-bold">₽{{ subtotal }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Скидка:</span>
+                            <span class="text-success fw-bold">-₽0</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Налог:</span>
+                            <span class="fw-bold">₽{{ tax }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span class="h5 mb-0">Итого:</span>
+                            <span class="h4 text-primary fw-bold">₽{{ total }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопка оформления -->
+                    <div class="d-grid">
+                        <button type="submit" form="orderForm" class="btn btn-primary btn-lg">
+                            <i class="fas fa-lock me-2"></i>Перейти к оплате
+                        </button>
+                    </div>
+                    
+                    <!-- Гарантии -->
+                    <div class="mt-4">
+                        <div class="alert alert-light border small">
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="fas fa-shield-alt text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong>Безопасная оплата</strong>
+                                    <p class="mb-0 small">Все платежи защищены SSL-шифрованием</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="fas fa-bolt text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong>Мгновенная доставка</strong>
+                                    <p class="mb-0 small">Файлы доступны сразу после оплаты</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-headset text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong>Поддержка 24/7</strong>
+                                    <p class="mb-0 small">Помощь с выбором и технические вопросы</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Возврат к корзине -->
+            <div class="mt-3 text-center">
+                <a href="{% url 'cart_detail' %}" class="text-primary text-decoration-none">
+                    <i class="fas fa-arrow-left me-2"></i>Вернуться в корзину
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    
+    .steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: #e9ecef;
+        z-index: 1;
+    }
+    
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .step.active .step-number {
+        background-color: #6f42c1;
+        color: white;
+    }
+    
+    .step-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-align: center;
+    }
+    
+    .step.active .step-label {
+        color: #6f42c1;
+        font-weight: 500;
+    }
+    
+    .payment-methods .form-check-label {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .payment-methods .form-check-input:checked + .form-check-label {
+        border-color: #6f42c1;
+        background-color: rgba(111, 66, 193, 0.05);
+    }
+    
+    .sticky-top {
+        z-index: 1020;
+    }
+    
+    .order-items {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    
+    .order-items::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    .order-items::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .order-items::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Валидация телефона
+        const phoneInput = document.querySelector('#id_phone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                
+                if (value.length > 0) {
+                    value = '+' + value;
+                }
+                
+                if (value.length > 1) {
+                    value = value.substring(0, 1) + ' ' + value.substring(1);
+                }
+                if (value.length > 5) {
+                    value = value.substring(0, 5) + ' ' + value.substring(5);
+                }
+                if (value.length > 9) {
+                    value = value.substring(0, 9) + ' ' + value.substring(9);
+                }
+                if (value.length > 12) {
+                    value = value.substring(0, 12) + ' ' + value.substring(12);
+                }
+                
+                e.target.value = value;
+            });
+        }
+        
+        // Валидация формы перед отправкой
+        const orderForm = document.getElementById('orderForm');
+        if (orderForm) {
+            orderForm.addEventListener('submit', function(e) {
+                const agreeTerms = document.getElementById('agreeTerms');
+                
+                if (!agreeTerms.checked) {
+                    e.preventDefault();
+                    alert('Пожалуйста, согласитесь с условиями продажи');
+                    agreeTerms.focus();
+                    return false;
+                }
+                
+                // Показать индикатор загрузки
+                const submitBtn = orderForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Обработка...';
+                submitBtn.disabled = true;
+                
+                // Добавить выбранный способ оплаты в форму
+                const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+                if (selectedPayment) {
+                    const paymentInput = document.createElement('input');
+                    paymentInput.type = 'hidden';
+                    paymentInput.name = 'payment_method';
+                    paymentInput.value = selectedPayment.value;
+                    orderForm.appendChild(paymentInput);
+                }
+            });
+        }
+        
+        // Сохранение данных формы в localStorage
+        const formInputs = orderForm.querySelectorAll('input, textarea, select');
+        formInputs.forEach(input => {
+            const storageKey = `order_form_${input.name}`;
+            
+            // Восстановление данных
+            const savedValue = localStorage.getItem(storageKey);
+            if (savedValue && input.type !== 'password') {
+                input.value = savedValue;
+            }
+            
+            // Сохранение данных
+            input.addEventListener('input', function() {
+                localStorage.setItem(storageKey, this.value);
+            });
+        });
+        
+        // Очистка localStorage после успешной отправки
+        if (performance.navigation.type === 1) { // Страница загружена по навигации
+            if (!localStorage.getItem('formSubmitted')) {
+                // Очищаем только если форма не была отправлена
+                formInputs.forEach(input => {
+                    localStorage.removeItem(`order_form_${input.name}`);
+                });
+            } else {
+                localStorage.removeItem('formSubmitted');
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

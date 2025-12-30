@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Поиск товаров - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+                    <li class="breadcrumb-item active">Поиск</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">Поиск товаров</h1>
+                <div class="text-muted">
+                    Результатов: <span class="fw-bold">{{ results_count }}</span>
+                </div>
+            </div>
+            
+            <!-- Форма поиска -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <form method="get" action="{% url 'search' %}" class="row g-2">
+                        <div class="col">
+                            <div class="input-group">
+                                <input type="text" 
+                                       name="q" 
+                                       class="form-control form-control-lg" 
+                                       placeholder="Введите название товара, тег или описание..."
+                                       value="{{ query|default:'' }}"
+                                       required>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-search"></i> Искать
+                                </button>
+                            </div>
+                            <div class="form-text mt-2">
+                                <i class="fas fa-lightbulb text-warning me-1"></i>
+                                Попробуйте: "шаблон", "графика", "курс", "ebook"
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if query %}
+        {% if products %}
+            <div class="row">
+                <div class="col">
+                    <p class="text-muted mb-4">
+                        Результаты поиска по запросу: <span class="fw-bold">"{{ query }}"</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="product-card">
+                        {% if product.has_discount %}
+                        <div class="discount-badge">
+                            -{{ product.discount_percent|floatformat:0 }}%
+                        </div>
+                        {% endif %}
+                        
+                        <a href="{% url 'product_detail' product.get_slug_or_id %}">
+                            <img src="{{ product.preview_image.url }}" 
+                                 class="product-image" 
+                                 alt="{{ product.name }}"
+                                 loading="lazy">
+                        </a>
+                        
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge category-badge">{{ product.get_product_type_display }}</span>
+                                <small class="text-muted">
+                                    <i class="fas fa-download me-1"></i> {{ product.sales_count }}
+                                </small>
+                            </div>
+                            
+                            <h5 class="card-title">
+                                <a href="{% url 'product_detail' product.get_slug_or_id %}" 
+                                   class="text-decoration-none text-dark">
+                                    {{ product.name|truncatechars:50 }}
+                                </a>
+                            </h5>
+                            
+                            <p class="card-text text-muted small">{{ product.short_description|truncatechars:80 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div>
+                                    {% if product.has_discount %}
+                                    <div class="product-price">₽{{ product.current_price }}</div>
+                                    <div class="product-price-old">₽{{ product.price }}</div>
+                                    {% else %}
+                                    <div class="product-price">₽{{ product.price }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <form action="{% url 'cart_add' product.id %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-cart-plus"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Пагинация -->
+            {% if products.has_other_pages %}
+            <nav aria-label="Навигация по страницам" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if products.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="?q={{ query }}&page={{ products.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i> Назад
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i> Назад</span>
+                    </li>
+                    {% endif %}
+
+                    {% for i in products.paginator.page_range %}
+                        {% if products.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?q={{ query }}&page={{ i }}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if products.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="?q={{ query }}&page={{ products.next_page_number }}">
+                            Вперед <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Вперед <i class="fas fa-chevron-right"></i></span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        {% else %}
+            <!-- Нет результатов -->
+            <div class="row justify-content-center">
+                <div class="col-lg-6 text-center">
+                    <div class="empty-state">
+                        <i class="fas fa-search fa-4x text-muted mb-4"></i>
+                        <h3 class="h4 mb-3">Ничего не найдено</h3>
+                        <p class="text-muted mb-4">
+                            По запросу <span class="fw-bold">"{{ query }}"</span> товаров не найдено.
+                            Попробуйте изменить поисковый запрос.
+                        </p>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="{% url 'all_products' %}" class="btn btn-primary">
+                                <i class="fas fa-store me-2"></i> Смотреть все товары
+                            </a>
+                            <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-home me-2"></i> На главную
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% else %}
+        <!-- Пустой поиск -->
+        <div class="row justify-content-center">
+            <div class="col-lg-6 text-center">
+                <div class="empty-state">
+                    <i class="fas fa-search fa-4x text-primary mb-4"></i>
+                    <h3 class="h4 mb-3">Что вы ищете?</h3>
+                    <p class="text-muted mb-4">
+                        Введите поисковый запрос в поле выше, чтобы найти нужные товары.
+                    </p>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <h5 class="h6 mb-3">Популярные запросы:</h5>
+                            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                <a href="?q=шаблон" class="btn btn-outline-primary btn-sm">
+                                    шаблон сайта
+                                </a>
+                                <a href="?q=графика" class="btn btn-outline-primary btn-sm">
+                                    графика
+                                </a>
+                                <a href="?q=курс" class="btn btn-outline-primary btn-sm">
+                                    онлайн-курс
+                                </a>
+                                <a href="?q=ebook" class="btn btn-outline-primary btn-sm">
+                                    электронная книга
+                                </a>
+                                <a href="?q=программа" class="btn btn-outline-primary btn-sm">
+                                    программа
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

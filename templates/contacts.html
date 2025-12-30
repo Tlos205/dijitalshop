@@ -1,0 +1,241 @@
+<!-- templates/contacts.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Контакты - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-4">Свяжитесь с нами</h1>
+            <p class="lead text-muted">Есть вопросы или предложения? Мы всегда рады помочь!</p>
+        </div>
+    </div>
+
+    <div class="row g-5">
+        <!-- Контактная информация -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h3 class="h4 mb-4">Контактная информация</h3>
+                    
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-map-marker-alt text-primary fa-lg"></i>
+                        </div>
+                        <div>
+                            <h5 class="h6 mb-1">Адрес</h5>
+                            <p class="text-muted mb-0">г. Москва, ул. Тверская, д. 10, офис 505</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-phone text-primary fa-lg"></i>
+                        </div>
+                        <div>
+                            <h5 class="h6 mb-1">Телефон</h5>
+                            <p class="text-muted mb-0">
+                                <a href="tel:+78001234567" class="text-decoration-none">8-800-123-45-67</a><br>
+                                <small>Бесплатно по России</small>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-envelope text-primary fa-lg"></i>
+                        </div>
+                        <div>
+                            <h5 class="h6 mb-1">Email</h5>
+                            <p class="text-muted mb-0">
+                                <a href="mailto:support@digimart.ru" class="text-decoration-none">support@digimart.ru</a><br>
+                                <small>Поддержка 24/7</small>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-start">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-clock text-primary fa-lg"></i>
+                        </div>
+                        <div>
+                            <h5 class="h6 mb-1">Время работы</h5>
+                            <p class="text-muted mb-0">
+                                Пн-Пт: 9:00 - 18:00<br>
+                                Сб-Вс: 10:00 - 16:00
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Форма обратной связи -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <h3 class="h4 mb-4">Отправьте сообщение</h3>
+                    
+                    <form method="post" id="contactForm">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           placeholder="Ваше имя" required>
+                                    <label for="name">Ваше имя *</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           placeholder="Email" required>
+                                    <label for="email">Email *</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="subject" name="subject" 
+                                           placeholder="Тема" required>
+                                    <label for="subject">Тема *</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="message" name="message" 
+                                              placeholder="Сообщение" style="height: 150px;" required></textarea>
+                                    <label for="message">Сообщение *</label>
+                                </div>
+                            </div>
+                            
+                            <!-- Капча (простая) -->
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="captcha" name="captcha" 
+                                           placeholder="2 + 3 = ?" required>
+                                    <label for="captcha">Сколько будет 2 + 3? *</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="agreement" required>
+                                    <label class="form-check-label small" for="agreement">
+                                        Я согласен на обработку персональных данных
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-paper-plane me-2"></i> Отправить сообщение
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Карта -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="ratio ratio-16x9">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2245.373373617074!2d37.60825841579443!3d55.755826980553!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46b54a50b315e573%3A0xa886bf5a3d9b2e68!2z0YPQuy4g0KLQtdC70YzQvdCw0Y8sIDEwLCDQnNC-0YHQutCy0LAsIDExNzMxMg!5e0!3m2!1sru!2sru!4v1623756789315!5m2!1sru!2sru" 
+                                style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- FAQ -->
+    <div class="row mt-5">
+        <div class="col-lg-8 mx-auto">
+            <h3 class="text-center mb-5">Часто задаваемые вопросы</h3>
+            
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq1">
+                            Как происходит оплата товаров?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Оплата осуществляется через безопасные платежные системы. Мы принимаем банковские карты, электронные кошельки и другие популярные способы оплаты.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq2">
+                            Когда я получу товар после оплаты?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Все цифровые товары доступны для скачивания сразу после подтверждения оплаты. Ссылка для скачивания придет на вашу электронную почту и будет доступна в личном кабинете.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq3">
+                            Как вернуть товар?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            В соответствии с законодательством РФ, цифровые товары надлежащего качества возврату не подлежат. Однако если у вас возникли технические проблемы с товаром, свяжитесь с нашей поддержкой.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#faq4">
+                            Можно ли использовать товары в коммерческих целях?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Лицензия на использование товаров указана в описании каждого товара. Большинство товаров можно использовать в коммерческих проектах, но с ограничениями на перепродажу.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    const captcha = document.getElementById('captcha').value;
+    if (captcha !== '5') {
+        e.preventDefault();
+        alert('Неправильный ответ на вопрос безопасности');
+        return false;
+    }
+    
+    // Можно добавить отправку через AJAX
+    // e.preventDefault();
+    // ... AJAX код ...
+});
+</script>
+{% endblock %}

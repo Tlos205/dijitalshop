@@ -1,0 +1,195 @@
+<!-- templates/accounts/register.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Регистрация - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Регистрация
+                    </h3>
+                    <p class="mb-0 mt-2 small">Создайте аккаунт для покупок</p>
+                </div>
+                
+                <div class="card-body p-5">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h5 class="mb-3">Основная информация</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ form.username|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {{ form.email|as_crispy_field }}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ form.first_name|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {{ form.last_name|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="mb-3">Пароль</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ form.password1|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {{ form.password2|as_crispy_field }}
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-light border small">
+                                <h6 class="alert-heading">Требования к паролю:</h6>
+                                <ul class="mb-0">
+                                    <li>Не менее 8 символов</li>
+                                    <li>Не должен быть слишком простым</li>
+                                    <li>Не должен состоять только из цифр</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                                <label class="form-check-label small" for="agreeTerms">
+                                    Я соглашаюсь с <a href="#" class="text-primary">Условиями использования</a> 
+                                    и <a href="#" class="text-primary">Политикой конфиденциальности</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Зарегистрироваться
+                            </button>
+                            
+                            <div class="text-center mt-3">
+                                <p class="mb-0">Уже есть аккаунт? 
+                                    <a href="{% url 'login' %}" class="text-primary fw-bold">Войти</a>
+                                </p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer bg-light text-center py-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="mb-2 small text-muted">Или зарегистрируйтесь через</p>
+                            <div class="d-flex justify-content-center gap-3">
+                                <a href="#" class="btn btn-outline-dark btn-sm">
+                                    <i class="fab fa-vk"></i> VK
+                                </a>
+                                <a href="#" class="btn btn-outline-danger btn-sm">
+                                    <i class="fab fa-google"></i> Google
+                                </a>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="fab fa-telegram"></i> Telegram
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Преимущества регистрации -->
+            <div class="mt-5">
+                <h4 class="text-center mb-4">Преимущества аккаунта</h4>
+                <div class="row g-4">
+                    <div class="col-md-4 text-center">
+                        <div class="p-3">
+                            <i class="fas fa-shopping-bag fa-2x text-primary mb-3"></i>
+                            <h6>Быстрые покупки</h6>
+                            <p class="small text-muted">Сохраняйте данные для быстрого оформления</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="p-3">
+                            <i class="fas fa-history fa-2x text-primary mb-3"></i>
+                            <h6>История заказов</h6>
+                            <p class="small text-muted">Доступ ко всем вашим покупкам</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="p-3">
+                            <i class="fas fa-gift fa-2x text-primary mb-3"></i>
+                            <h6>Скидки и бонусы</h6>
+                            <p class="small text-muted">Специальные предложения для зарегистрированных</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        border-radius: 15px 15px 0 0 !important;
+    }
+    
+    .form-control:focus {
+        border-color: #6f42c1;
+        box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Валидация пароля
+        const password1 = document.querySelector('#id_password1');
+        const password2 = document.querySelector('#id_password2');
+        
+        function validatePasswords() {
+            if (password1.value !== password2.value) {
+                password2.setCustomValidity('Пароли не совпадают');
+            } else {
+                password2.setCustomValidity('');
+            }
+        }
+        
+        password1.addEventListener('change', validatePasswords);
+        password2.addEventListener('keyup', validatePasswords);
+        
+        // Показать/скрыть пароль
+        const toggleButtons = document.querySelectorAll('.password-toggle');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const input = this.previousElementSibling;
+                const icon = this.querySelector('i');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

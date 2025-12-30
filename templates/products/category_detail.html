@@ -1,0 +1,265 @@
+<!-- templates/products/category_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category.name }} - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+                    <li class="breadcrumb-item active">{{ category.name }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h1 class="h2 mb-2">{{ category.name }}</h1>
+                    {% if category.description %}
+                    <p class="text-muted mb-0">{{ category.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="text-muted">
+                    Товаров: <span class="fw-bold">{{ products.paginator.count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры и сортировка -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <div class="d-flex align-items-center">
+                                <span class="me-3">Фильтр:</span>
+                                <div class="btn-group">
+                                    <a href="{% url 'category_detail' category.slug %}" 
+                                       class="btn btn-outline-primary btn-sm {% if not request.GET.type %}active{% endif %}">
+                                        Все типы
+                                    </a>
+                                    {% for type_key, type_name in product_types %}
+                                    <a href="?type={{ type_key }}" 
+                                       class="btn btn-outline-primary btn-sm {% if request.GET.type == type_key %}active{% endif %}">
+                                        {{ type_name }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center justify-content-md-end">
+                                <span class="me-3">Сортировка:</span>
+                                <select class="form-select form-select-sm" 
+                                        style="max-width: 200px;" 
+                                        onchange="location = this.value;">
+                                    <option value="?sort=newest" 
+                                            {% if request.GET.sort == 'newest' or not request.GET.sort %}selected{% endif %}>
+                                        Сначала новые
+                                    </option>
+                                    <option value="?sort=popular" 
+                                            {% if request.GET.sort == 'popular' %}selected{% endif %}>
+                                        Популярные
+                                    </option>
+                                    <option value="?sort=price_asc" 
+                                            {% if request.GET.sort == 'price_asc' %}selected{% endif %}>
+                                        Сначала дешевле
+                                    </option>
+                                    <option value="?sort=price_desc" 
+                                            {% if request.GET.sort == 'price_desc' %}selected{% endif %}>
+                                        Сначала дороже
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="row g-4">
+        {% for product in products %}
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="product-card">
+                {% if product.has_discount %}
+                <div class="discount-badge">
+                    -{{ product.discount_percent|floatformat:0 }}%
+                </div>
+                {% endif %}
+                
+                {% if product.preview_image %}
+                <a href="{% url 'product_detail' product.get_slug_or_id %}">
+                    <img src="{{ product.preview_image.url }}" 
+                    class="product-image" 
+                    alt="{{ product.name }}"
+                    loading="lazy">
+                </a>
+                {% else %}
+                    <div class="no-image-placeholder">
+                        <i class="fas fa-image"></i>
+                        <span>Нет изображения</span>
+                    </div>
+                {% endif %}
+                
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge category-badge">{{ product.get_product_type_display }}</span>
+                        <small class="text-muted">
+                            <i class="fas fa-download me-1"></i> {{ product.sales_count }}
+                        </small>
+                    </div>
+                    
+                    <h5 class="card-title">
+                        <a href="{% url 'product_detail' product.get_slug_or_id %}" 
+                           class="text-decoration-none text-dark">
+                            {{ product.name|truncatechars:50 }}
+                        </a>
+                    </h5>
+                    
+                    <p class="card-text text-muted small">{{ product.short_description|truncatechars:80 }}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            {% if product.has_discount %}
+                            <div class="product-price">₽{{ product.current_price }}</div>
+                            <div class="product-price-old">₽{{ product.price }}</div>
+                            {% else %}
+                            <div class="product-price">₽{{ product.price }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <form action="{% url 'cart_add' product.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if products.has_other_pages %}
+    <nav aria-label="Навигация по страницам" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if products.has_previous %}
+            <li class="page-item">
+                <a class="page-link" 
+                   href="?page={{ products.previous_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                    <i class="fas fa-chevron-left"></i> Назад
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="fas fa-chevron-left"></i> Назад</span>
+            </li>
+            {% endif %}
+
+            {% for i in products.paginator.page_range %}
+                {% if products.number == i %}
+                <li class="page-item active">
+                    <span class="page-link">{{ i }}</span>
+                </li>
+                {% elif i > products.number|add:'-3' and i < products.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?page={{ i }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                        {{ i }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if products.has_next %}
+            <li class="page-item">
+                <a class="page-link" 
+                   href="?page={{ products.next_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                    Вперед <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Вперед <i class="fas fa-chevron-right"></i></span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Нет товаров в категории -->
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <div class="empty-state">
+                <i class="fas fa-folder-open fa-4x text-muted mb-4"></i>
+                <h3 class="h4 mb-3">Товаров пока нет</h3>
+                <p class="text-muted mb-4">
+                    В категории "{{ category.name }}" пока нет доступных товаров.
+                    Загляните позже или посмотрите другие категории.
+                </p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{% url 'all_products' %}" class="btn btn-primary">
+                        <i class="fas fa-store me-2"></i> Смотреть все товары
+                    </a>
+                    <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i> На главную
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Другие категории -->
+    {% if category.description %}
+    <div class="row mt-5">
+        <div class="col">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">О категории</h5>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="mb-0">{{ category.description }}</p>
+                        </div>
+                        {% if category.image %}
+                        <div class="col-md-4">
+                            <img src="{{ category.image.url }}" 
+                                 class="img-fluid rounded" 
+                                 alt="{{ category.name }}">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Обновляем URL при выборе сортировки
+document.addEventListener('DOMContentLoaded', function() {
+    const sortSelect = document.querySelector('select[onchange*="sort"]');
+    if (sortSelect) {
+        const currentParams = new URLSearchParams(window.location.search);
+        sortSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            window.location.href = selectedValue;
+        });
+    }
+});
+</script>
+{% endblock %}

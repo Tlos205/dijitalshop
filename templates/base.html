@@ -1,0 +1,385 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DigiMart - Магазин цифровых товаров{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        :root {
+            --primary-color: #6f42c1;
+            --secondary-color: #fd7e14;
+            --success-color: #20c997;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        .navbar-brand {
+            color: var(--primary-color) !important;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #5a32a3;
+            border-color: #5a32a3;
+        }
+        
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+        
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+        
+        .category-badge {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        
+        .product-card {
+            transition: all 0.3s ease;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+        }
+        
+        .product-image {
+            height: 200px;
+            object-fit: cover;
+            width: 100%;
+        }
+        
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .product-price-old {
+            text-decoration: line-through;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .discount-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            margin-top: auto;
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(111, 66, 193, 0.9), rgba(253, 126, 20, 0.9)),
+                        url('https://via.placeholder.com/1920x600');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-shopping-cart"></i> DigiMart
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="fas fa-home"></i> Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'all_products' %}">
+                            <i class="fas fa-box"></i> Все товары
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-th-large"></i> Категории
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% for category in categories %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'category_detail' category.slug %}">
+                                    {{ category.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'about' %}">
+                            <i class="fas fa-info-circle"></i> О нас
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Поиск -->
+                <form class="d-flex me-3" action="{% url 'search' %}" method="get">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Поиск товаров..." name="q">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Корзина и аккаунт -->
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'cart_detail' %}" class="btn btn-outline-primary position-relative me-3">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ cart_items_count|default:0 }}
+                        </span>
+                    </a>
+                    
+                    {% if user.is_authenticated %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> {{ user.username }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">
+                                <i class="fas fa-user-circle"></i> Личный кабинет
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'order_list' %}">
+                                <i class="fas fa-history"></i> Мои заказы
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt"></i> Выйти
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="btn-group">
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-sign-in-alt"></i> Войти
+                        </a>
+                        <a href="{% url 'register' %}" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Регистрация
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+{% include 'includes/mobile_nav.html' %}
+{% include 'includes/mobile_footer.html' %}    
+    <!-- Сообщения -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Основной контент -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Футер -->
+    <footer class="footer mt-5">
+        <div class="container py-5">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3">DigiMart</h5>
+                    <p>Интернет-магазин цифровых товаров с мгновенной доставкой. Лучшие товары для вашего бизнеса и творчества.</p>
+                    <div class="social-icons">
+                        <a href="#" class="text-white me-3"><i class="fab fa-vk fa-lg"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-telegram fa-lg"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-youtube fa-lg"></i></a>
+                    </div>
+                </div>
+                
+                <div class="col-md-2 mb-4">
+                    <h5 class="mb-3">Категории</h5>
+                    <ul class="list-unstyled">
+                        {% for category in categories|slice:":5" %}
+                        <li class="mb-2">
+                            <a href="{% url 'category_detail' category.slug %}" class="text-white-50 text-decoration-none">
+                                {{ category.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <h5 class="mb-3">Информация</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <a href="{% url 'about' %}" class="text-white-50 text-decoration-none">
+                                О магазине
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#" class="text-white-50 text-decoration-none">
+                                Доставка и оплата
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#" class="text-white-50 text-decoration-none">
+                                Пользовательское соглашение
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#" class="text-white-50 text-decoration-none">
+                                Политика конфиденциальности
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <h5 class="mb-3">Контакты</h5>
+                    <ul class="list-unstyled text-white-50">
+                        <li class="mb-2">
+                            <i class="fas fa-envelope me-2"></i> support@digimart.ru
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-phone me-2"></i> 8-800-123-45-67
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock me-2"></i> Пн-Пт: 9:00-18:00
+                        </li>
+                        <li>
+                            <i class="fas fa-map-marker-alt me-2"></i> г. Москва
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+            
+            <div class="text-center">
+                <p class="mb-0">&copy; {% now "Y" %} DigiMart. Все права защищены.</p>
+                <p class="mt-2">
+                    <small class="text-white-50">
+                        ИНН: 1234567890 | ОГРН: 1234567890123
+                    </small>
+                </p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Обновление количества товаров в корзине
+        function updateCartCount() {
+            fetch('/cart/count/')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.querySelector('.cart-badge');
+                    if (badge) {
+                        badge.textContent = data.count;
+                    }
+                });
+        }
+        
+        // Анимация добавления в корзину
+        function animateCartAdd(button) {
+            button.classList.add('btn-success');
+            button.innerHTML = '<i class="fas fa-check"></i> Добавлено';
+            setTimeout(() => {
+                button.classList.remove('btn-success');
+                button.innerHTML = '<i class="fas fa-cart-plus"></i> В корзину';
+            }, 2000);
+            updateCartCount();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация всех всплывающих подсказок
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
+        // Закрытие мобильного меню при клике на ссылку
+document.querySelectorAll('.mobile-nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('mobileNav'));
+        offcanvas.hide();
+    });
+});
+
+// Обновление количества товаров в корзине
+function updateCartBadge() {
+    fetch('/cart/count/')
+        .then(response => response.json())
+        .then(data => {
+            document.querySelectorAll('.cart-badge').forEach(badge => {
+                badge.textContent = data.count;
+            });
+        });
+}
+
+// Проверка мобильного устройства
+function isMobile() {
+    return window.innerWidth <= 992;
+}
+    </script>
+</body>
+</html>

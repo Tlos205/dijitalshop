@@ -1,0 +1,461 @@
+<!-- templates/orders/order_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}Заказ {{ order.order_number }} - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Заголовок и статус -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">Заказ {{ order.order_number }}</h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-calendar me-1"></i>
+                        {{ order.created_at|date:"d.m.Y H:i" }}
+                    </p>
+                </div>
+                
+                <div>
+                    <span class="badge bg-{{ order.status_color }} fs-6 py-2 px-3">
+                        {{ order.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Информация о заказе -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Информация о заказе
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">Покупатель</h6>
+                            <p class="mb-1">
+                                <strong>{{ order.first_name }} {{ order.last_name }}</strong>
+                            </p>
+                            <p class="mb-1">{{ order.email }}</p>
+                            {% if order.phone %}
+                            <p class="mb-0">{{ order.phone }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">Оплата</h6>
+                            <p class="mb-1">
+                                <strong>
+                                    {% if order.payment_method == 'yandex' %}
+                                    ЮMoney
+                                    {% elif order.payment_method == 'card' %}
+                                    Банковская карта
+                                    {% elif order.payment_method == 'sber' %}
+                                    Сбербанк Онлайн
+                                    {% else %}
+                                    {{ order.payment_method|default:"Не указано" }}
+                                    {% endif %}
+                                </strong>
+                            </p>
+                            {% if order.paid_at %}
+                            <p class="mb-0">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                Оплачено {{ order.paid_at|date:"d.m.Y H:i" }}
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-warning">
+                                <i class="fas fa-clock me-1"></i>
+                                Ожидает оплаты
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Товары в заказе -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-box me-2"></i>Товары в заказе
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0" style="width: 80px;"></th>
+                                    <th class="border-0">Товар</th>
+                                    <th class="border-0 text-center">Цена</th>
+                                    <th class="border-0 text-center">Количество</th>
+                                    <th class="border-0 text-end">Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order_items %}
+                                <tr>
+                                    <td>
+                                        <img src="{{ item.product.preview_image.url }}" 
+                                             class="rounded" 
+                                             style="width: 60px; height: 60px; object-fit: cover;"
+                                             alt="{{ item.product.name }}">
+                                    </td>
+                                    <td>
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'product_detail' item.product.get_slug_or_id %}" class="text-decoration-none">
+                                                {{ item.product.name }}
+                                            </a>
+                                        </h6>
+                                        <p class="text-muted small mb-0">{{ item.product.short_description|truncatechars:60 }}</p>
+                                    </td>
+                                    <td class="text-center">₽{{ item.price }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end fw-bold">₽{{ item.total_price }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Действия с заказом -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cogs me-2"></i>Действия с заказом
+                    </h5>
+                    
+                    <div class="row g-3">
+                        {% if order.status == 'pending' %}
+                        <div class="col-md-4">
+                            <a href="#" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-credit-card me-2"></i>Оплатить
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.status == 'completed' %}
+                        <div class="col-md-4">
+                            <a href="#" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-download me-2"></i>Скачать все
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="col-md-4">
+                            <a href="#" class="btn btn-outline-primary btn-lg w-100">
+                                <i class="fas fa-print me-2"></i>Печать
+                            </a>
+                        </div>
+                        
+                        {% if order.status == 'pending' or order.status == 'processing' %}
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-danger btn-lg w-100" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+                                <i class="fas fa-times me-2"></i>Отменить
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Итоговая сумма -->
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>Сумма заказа
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Сумма товаров:</span>
+                            <span class="fw-bold">₽{{ order.subtotal }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Скидка:</span>
+                            <span class="text-success fw-bold">-₽0</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Налог:</span>
+                            <span class="fw-bold">₽{{ order.tax }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span class="h5 mb-0">Итого:</span>
+                            <span class="h4 text-primary fw-bold">₽{{ order.total }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Квитанция -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Квитанция об оплате</h6>
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-outline-primary">
+                                <i class="fas fa-file-pdf me-2"></i>Скачать PDF
+                            </a>
+                            <a href="#" class="btn btn-outline-secondary">
+                                <i class="fas fa-envelope me-2"></i>Отправить на email
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Контакты поддержки -->
+                    <div class="alert alert-light border">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-headset me-2"></i>Нужна помощь?
+                        </h6>
+                        <p class="small mb-2">По вопросам оплаты или доставки:</p>
+                        <ul class="small mb-0 ps-3">
+                            <li>Email: support@digimart.ru</li>
+                            <li>Телефон: 8-800-123-45-67</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- История статусов -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>История заказа
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item {% if order.status != 'pending' %}completed{% endif %}">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Заказ создан</h6>
+                                <p class="small text-muted mb-0">{{ order.created_at|date:"d.m.Y H:i" }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status == 'paid' or order.status == 'processing' or order.status == 'completed' %}completed{% endif %}">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Оплачен</h6>
+                                {% if order.paid_at %}
+                                <p class="small text-muted mb-0">{{ order.paid_at|date:"d.m.Y H:i" }}</p>
+                                {% else %}
+                                <p class="small text-muted mb-0">Ожидает оплаты</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status == 'processing' or order.status == 'completed' %}completed{% endif %}">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">В обработке</h6>
+                                <p class="small text-muted mb-0">
+                                    {% if order.status == 'processing' or order.status == 'completed' %}
+                                    Обработан
+                                    {% else %}
+                                    Ожидает обработки
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status == 'completed' %}completed{% endif %}">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Завершен</h6>
+                                <p class="small text-muted mb-0">
+                                    {% if order.status == 'completed' %}
+                                    Доставлен
+                                    {% else %}
+                                    В процессе доставки
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Кнопка возврата -->
+            <div class="mt-4 text-center">
+                <a href="{% url 'order_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>К списку заказов
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно отмены заказа -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>Отмена заказа
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите отменить заказ <strong>{{ order.order_number }}</strong>?</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">Причина отмены (необязательно)</label>
+                    <select class="form-select" id="cancelReason">
+                        <option value="">Выберите причину</option>
+                        <option value="changed_mind">Передумал покупать</option>
+                        <option value="found_cheaper">Нашел дешевле</option>
+                        <option value="technical_issues">Технические проблемы</option>
+                        <option value="other">Другая причина</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="otherReasonContainer" style="display: none;">
+                    <label class="form-label">Укажите причину</label>
+                    <textarea class="form-control" id="otherReason" rows="2"></textarea>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    После отмены заказа деньги будут возвращены в течение 3-10 рабочих дней.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmCancel">Отменить заказ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .badge.bg-pending { background-color: #ffc107; color: #000; }
+    .badge.bg-paid { background-color: #20c997; }
+    .badge.bg-processing { background-color: #0dcaf0; }
+    .badge.bg-completed { background-color: #198754; }
+    .badge.bg-cancelled { background-color: #dc3545; }
+    
+    .sticky-top {
+        z-index: 1020;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item.completed .timeline-marker {
+        background-color: #198754;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #6c757d;
+        border: 3px solid white;
+    }
+    
+    .timeline-content {
+        padding-bottom: 10px;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(111, 66, 193, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Отмена заказа
+        const cancelReason = document.getElementById('cancelReason');
+        const otherReasonContainer = document.getElementById('otherReasonContainer');
+        const confirmCancelBtn = document.getElementById('confirmCancel');
+        
+        if (cancelReason) {
+            cancelReason.addEventListener('change', function() {
+                if (this.value === 'other') {
+                    otherReasonContainer.style.display = 'block';
+                } else {
+                    otherReasonContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        if (confirmCancelBtn) {
+            confirmCancelBtn.addEventListener('click', function() {
+                const reason = cancelReason.value;
+                const otherReason = document.getElementById('otherReason').value;
+                
+                if (!reason && !otherReason) {
+                    alert('Пожалуйста, укажите причину отмены');
+                    return;
+                }
+                
+                // Здесь будет AJAX запрос на отмену заказа
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Отмена...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    alert('Заказ успешно отменен. Деньги будут возвращены в течение 3-10 рабочих дней.');
+                    bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal')).hide();
+                    window.location.reload();
+                }, 1500);
+            });
+        }
+        
+        // Печать заказа
+        const printBtn = document.querySelector('a[href="#"]:contains("Печать")');
+        if (printBtn) {
+            printBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.print();
+            });
+        }
+        
+        // Скачивание всех файлов
+        const downloadAllBtn = document.querySelector('a[href="#"]:contains("Скачать все")');
+        if (downloadAllBtn) {
+            downloadAllBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Здесь будет логика создания архива со всеми файлами
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Подготовка архива...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    alert('Архив с файлами создан и отправлен на скачивание.');
+                    this.innerHTML = '<i class="fas fa-download me-2"></i>Скачать все';
+                    this.disabled = false;
+                }, 2000);
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

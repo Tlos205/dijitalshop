@@ -1,0 +1,151 @@
+<!-- templates/accounts/login.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Вход - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-sign-in-alt me-2"></i>Вход в аккаунт
+                    </h3>
+                    <p class="mb-0 mt-2 small">Добро пожаловать обратно!</p>
+                </div>
+                
+                <div class="card-body p-5">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-4">
+                            <div class="mb-3">
+                                {{ form.username|as_crispy_field }}
+                                <div class="form-text small">
+                                    Введите имя пользователя или email
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="position-relative">
+                                    {{ form.password|as_crispy_field }}
+                                    <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y password-toggle me-3">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="text-end">
+                                    <a href="#" class="small text-primary">Забыли пароль?</a>
+                                </div>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="rememberMe" name="remember_me">
+                                <label class="form-check-label" for="rememberMe">
+                                    Запомнить меня
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Войти
+                            </button>
+                            
+                            <div class="text-center mt-3">
+                                <p class="mb-0">Нет аккаунта? 
+                                    <a href="{% url 'register' %}" class="text-primary fw-bold">Зарегистрироваться</a>
+                                </p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer bg-light text-center py-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="mb-2 small text-muted">Или войдите через</p>
+                            <div class="d-flex justify-content-center gap-3">
+                                <a href="#" class="btn btn-outline-dark btn-sm">
+                                    <i class="fab fa-vk"></i> VK
+                                </a>
+                                <a href="#" class="btn btn-outline-danger btn-sm">
+                                    <i class="fab fa-google"></i> Google
+                                </a>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="fab fa-telegram"></i> Telegram
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Быстрые покупки для гостей -->
+            <div class="mt-5 text-center">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Хотите купить без регистрации?</h5>
+                        <p class="card-text text-muted small mb-3">
+                            Вы можете оформить заказ как гость, но не получите доступ к истории покупок
+                        </p>
+                        <a href="{% url 'all_products' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Продолжить покупки
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .password-toggle {
+        z-index: 10;
+        padding: 0;
+        margin: 0;
+        border: none;
+        background: none;
+        color: #6c757d;
+    }
+    
+    .password-toggle:hover {
+        color: #6f42c1;
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Показать/скрыть пароль
+        const toggleButton = document.querySelector('.password-toggle');
+        const passwordInput = document.querySelector('#id_password');
+        
+        if (toggleButton && passwordInput) {
+            toggleButton.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

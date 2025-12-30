@@ -1,0 +1,254 @@
+<!-- templates/about.html -->
+{% extends 'base.html' %}
+
+{% block title %}О нас - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Герой секция -->
+    <div class="row align-items-center mb-5">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-4">О компании DigiMart</h1>
+            <p class="lead mb-4">
+                DigiMart — это современная платформа для продажи цифровых товаров. 
+                Мы помогаем авторам продавать свои работы, а покупателям — находить качественный контент.
+            </p>
+            <div class="d-flex gap-3">
+                <a href="{% url 'all_products' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-shopping-bag me-2"></i>Купить товары
+                </a>
+                <a href="#contact" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-envelope me-2"></i>Связаться с нами
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="position-relative">
+                <img src="https://via.placeholder.com/600x400" 
+                     class="img-fluid rounded shadow-lg" 
+                     alt="О компании DigiMart">
+                <div class="position-absolute bottom-0 start-0 bg-primary text-white p-4 rounded-end" 
+                     style="transform: translateY(50%);">
+                    <h3 class="mb-0">500+</h3>
+                    <p class="mb-0 small">Товаров в каталоге</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Наша миссия -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Наша миссия</h2>
+                    <p class="text-center lead mb-0">
+                        Сделать качественные цифровые товары доступными каждому, 
+                        предоставив удобную платформу для авторов и покупателей.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ценности -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="text-center mb-5">Наши ценности</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100 text-center">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <i class="fas fa-shield-alt fa-3x text-primary"></i>
+                            </div>
+                            <h4>Качество</h4>
+                            <p class="text-muted">
+                                Все товары проходят модерацию перед публикацией. 
+                                Мы гарантируем высокое качество контента.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100 text-center">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <i class="fas fa-bolt fa-3x text-primary"></i>
+                            </div>
+                            <h4>Скорость</h4>
+                            <p class="text-muted">
+                                Мгновенная доставка после оплаты. 
+                                Файлы доступны для скачивания сразу.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100 text-center">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <i class="fas fa-headset fa-3x text-primary"></i>
+                            </div>
+                            <h4>Поддержка</h4>
+                            <p class="text-muted">
+                                Круглосуточная поддержка для покупателей и авторов. 
+                                Помогаем решать любые вопросы.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Команда -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="text-center mb-5">Наша команда</h2>
+            
+            <div class="row g-4 justify-content-center">
+                <div class="col-md-4 col-lg-3">
+                    <div class="card border-0 shadow-sm text-center">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <img src="https://via.placeholder.com/150" 
+                                     class="rounded-circle" 
+                                     alt="Основатель" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
+                            </div>
+                            <h5 class="mb-1">Александр Иванов</h5>
+                            <p class="text-muted small mb-3">Основатель и CEO</p>
+                            <p class="small">
+                                Более 10 лет в IT и digital-продуктах. 
+                                Создал DigiMart чтобы помочь авторам монетизировать свои работы.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 col-lg-3">
+                    <div class="card border-0 shadow-sm text-center">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <img src="https://via.placeholder.com/150" 
+                                     class="rounded-circle" 
+                                     alt="CTO" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
+                            </div>
+                            <h5 class="mb-1">Мария Петрова</h5>
+                            <p class="text-muted small mb-3">Технический директор</p>
+                            <p class="small">
+                                Отвечает за разработку и техническую часть платформы. 
+                                Обеспечивает стабильность и безопасность.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 col-lg-3">
+                    <div class="card border-0 shadow-sm text-center">
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <img src="https://via.placeholder.com/150" 
+                                     class="rounded-circle" 
+                                     alt="Маркетолог" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
+                            </div>
+                            <h5 class="mb-1">Дмитрий Сидоров</h5>
+                            <p class="text-muted small mb-3">Маркетинг и продвижение</p>
+                            <p class="small">
+                                Помогает авторам продвигать их товары. 
+                                Развивает партнерскую программу и маркетплейс.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Контакты -->
+    <div class="row" id="contact">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Контакты</h2>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Контактная информация</h5>
+                            
+                            <div class="mb-3">
+                                <i class="fas fa-envelope text-primary me-2"></i>
+                                <strong>Email:</strong> support@digimart.ru
+                            </div>
+                            
+                            <div class="mb-3">
+                                <i class="fas fa-phone text-primary me-2"></i>
+                                <strong>Телефон:</strong> 8-800-123-45-67
+                            </div>
+                            
+                            <div class="mb-3">
+                                <i class="fas fa-clock text-primary me-2"></i>
+                                <strong>Время работы:</strong> Пн-Пт: 9:00-18:00
+                            </div>
+                            
+                            <div class="mb-4">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                <strong>Адрес:</strong> г. Москва, ул. Примерная, д. 123
+                            </div>
+                            
+                            <h5 class="mb-3">Мы в социальных сетях</h5>
+                            <div class="d-flex gap-3">
+                                <a href="#" class="btn btn-outline-dark">
+                                    <i class="fab fa-vk"></i>
+                                </a>
+                                <a href="#" class="btn btn-outline-primary">
+                                    <i class="fab fa-telegram"></i>
+                                </a>
+                                <a href="#" class="btn btn-outline-danger">
+                                    <i class="fab fa-youtube"></i>
+                                </a>
+                                <a href="#" class="btn btn-outline-info">
+                                    <i class="fab fa-viber"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Форма обратной связи</h5>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Ваше имя</label>
+                                    <input type="text" class="form-control" name="name" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="email" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Сообщение</label>
+                                    <textarea class="form-control" name="message" rows="4" required></textarea>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Отправить
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

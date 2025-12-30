@@ -1,0 +1,291 @@
+<!-- templates/products/product_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} - DigiMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'category_detail' product.category.slug %}">{{ product.category.name }}</a></li>
+            <li class="breadcrumb-item active">{{ product.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Изображение товара -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm mb-4">
+                <img src="{{ product.preview_image.url }}" class="img-fluid rounded" alt="{{ product.name }}" id="mainImage">
+            </div>
+            
+            {% if product.additional_images %}
+            <div class="row g-2">
+                <div class="col-3">
+                    <img src="{{ product.preview_image.url }}" 
+                         class="img-fluid rounded border cursor-pointer" 
+                         onclick="changeImage(this.src)"
+                         style="cursor: pointer;">
+                </div>
+                <div class="col-3">
+                    <img src="{{ product.additional_images.url }}" 
+                         class="img-fluid rounded border cursor-pointer" 
+                         onclick="changeImage(this.src)"
+                         style="cursor: pointer;">
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Информация о товаре -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <!-- Заголовок и категория -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="badge bg-primary">{{ product.get_product_type_display }}</span>
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-download me-1"></i> {{ product.sales_count }} продаж
+                            </span>
+                        </div>
+                        <div>
+                            <i class="fas fa-eye me-1"></i> {{ product.view_count }}
+                        </div>
+                    </div>
+                    
+                    <h1 class="h2 mb-3">{{ product.name }}</h1>
+                    <p class="lead mb-4">{{ product.short_description }}</p>
+                    
+                    <!-- Цена -->
+                    <div class="mb-4">
+                        {% if product.has_discount %}
+                        <div class="d-flex align-items-center">
+                            <span class="display-5 fw-bold text-primary me-3">₽{{ product.current_price }}</span>
+                            <span class="h4 text-decoration-line-through text-muted me-3">₽{{ product.price }}</span>
+                            <span class="badge bg-danger fs-6">
+                                Скидка {{ product.discount_percent|floatformat:0 }}%
+                            </span>
+                        </div>
+                        {% else %}
+                        <span class="display-5 fw-bold text-primary">₽{{ product.price }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Характеристики -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Характеристики</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    {% if product.file_size %}
+                                    <li class="mb-2">
+                                        <i class="fas fa-hdd text-primary me-2"></i>
+                                        <strong>Размер:</strong> {{ product.file_size }}
+                                    </li>
+                                    {% endif %}
+                                    {% if product.file_format %}
+                                    <li class="mb-2">
+                                        <i class="fas fa-file text-primary me-2"></i>
+                                        <strong>Формат:</strong> {{ product.file_format }}
+                                    </li>
+                                    {% endif %}
+                                    {% if product.version %}
+                                    <li class="mb-2">
+                                        <i class="fas fa-code-branch text-primary me-2"></i>
+                                        <strong>Версия:</strong> {{ product.version }}
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    {% if product.compatibility %}
+                                    <li class="mb-2">
+                                        <i class="fas fa-check-circle text-primary me-2"></i>
+                                        <strong>Совместимость:</strong> {{ product.compatibility }}
+                                    </li>
+                                    {% endif %}
+                                    {% for feature in product.features.all %}
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-primary me-2"></i>
+                                        <strong>{{ feature.name }}:</strong> {{ feature.value }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопки действий -->
+                    <div class="d-grid gap-2 d-md-flex mb-4">
+                        {% if user.is_authenticated %}
+                        <form action="{% url 'cart_add' product.id %}" method="post" class="flex-grow-1">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                <input type="number" name="quantity" value="1" min="1" class="form-control" style="max-width: 80px;">
+                                <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                                    <i class="fas fa-cart-plus me-2"></i> Добавить в корзину
+                                </button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-lg flex-grow-1">
+                            <i class="fas fa-sign-in-alt me-2"></i> Войдите для покупки
+                        </a>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-primary btn-lg">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Гарантии -->
+                    <div class="alert alert-light border">
+                        <div class="row text-center">
+                            <div class="col">
+                                <i class="fas fa-sync-alt text-primary mb-2"></i>
+                                <p class="mb-0 small">Бесплатные обновления</p>
+                            </div>
+                            <div class="col">
+                                <i class="fas fa-headset text-primary mb-2"></i>
+                                <p class="mb-0 small">Поддержка 24/7</p>
+                            </div>
+                            <div class="col">
+                                <i class="fas fa-shield-alt text-primary mb-2"></i>
+                                <p class="mb-0 small">Гарантия качества</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Описание товара -->
+    <div class="row mt-5">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="productTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description">
+                                Описание
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="features-tab" data-bs-toggle="tab" data-bs-target="#features">
+                                Характеристики
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews">
+                                Отзывы (0)
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content py-4" id="productTabContent">
+                        <div class="tab-pane fade show active" id="description">
+                            {{ product.description|linebreaks }}
+                            
+                            {% if product.detailed_description %}
+                            <hr class="my-4">
+                            <h5>Подробное описание</h5>
+                            {{ product.detailed_description|linebreaks }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="tab-pane fade" id="features">
+                            <div class="row">
+                                {% for feature in product.features.all %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex justify-content-between border-bottom pb-2">
+                                        <span class="fw-bold">{{ feature.name }}</span>
+                                        <span>{{ feature.value }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="reviews">
+                            <div class="text-center py-5">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <p class="lead">Отзывов пока нет</p>
+                                <p class="text-muted">Будьте первым, кто оставит отзыв об этом товаре!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Боковая панель -->
+        <div class="col-lg-4">
+            <!-- Информация о продавце -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Информация о товаре</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-calendar text-primary me-2"></i>
+                            <strong>Дата публикации:</strong> 
+                            {{ product.created_at|date:"d.m.Y" }}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-sync-alt text-primary me-2"></i>
+                            <strong>Последнее обновление:</strong> 
+                            {{ product.updated_at|date:"d.m.Y" }}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-tags text-primary me-2"></i>
+                            <strong>Теги:</strong>
+                            {% if product.tags %}
+                                {% for tag in product.tags.split %}
+                                <span class="badge bg-light text-dark">{{ tag }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Похожие товары -->
+            {% if related_products %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Похожие товары</h5>
+                    {% for related in related_products %}
+                    <div class="d-flex mb-3">
+                        <img src="{{ related.preview_image.url }}" 
+                             class="rounded me-3" 
+                             style="width: 60px; height: 60px; object-fit: cover;"
+                             alt="{{ related.name }}">
+                        <div>
+                            <h6 class="mb-1">
+                                <a href="{% url 'product_detail' related.slug %}" class="text-decoration-none">
+                                    {{ related.name|truncatechars:40 }}
+                                </a>
+                            </h6>
+                            <p class="text-primary mb-0 fw-bold">₽{{ related.current_price }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function changeImage(src) {
+        document.getElementById('mainImage').src = src;
+    }
+</script>
+{% endblock %}
