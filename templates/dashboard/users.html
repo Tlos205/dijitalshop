@@ -1,0 +1,579 @@
+<!-- templates/dashboard/users.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Аналитика пользователей - DigiMart Dashboard{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Cards -->
+    <div class="stats-grid mb-4">
+        <div class="dashboard-card">
+            <div class="card-title">Всего пользователей</div>
+            <div class="card-value">{{ total_users }}</div>
+            <div class="card-change change-up">
+                <i class="fas fa-user-plus me-1"></i>
+                +{{ user_analytics.new_users_by_day.0.count }} сегодня
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Активные (30 дней)</div>
+            <div class="card-value">{{ user_activity.active_this_month }}</div>
+            <div class="card-change">
+                <i class="fas fa-chart-line me-1"></i>
+                {% widthratio user_activity.active_this_month total_users 100 %}% от всех
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Повторные покупки</div>
+            <div class="card-value">{{ user_activity.repeat_buyers }}</div>
+            <div class="card-change">
+                <i class="fas fa-retweet me-1"></i>
+                {% widthratio user_activity.repeat_buyers user_activity.active_this_month 100 %}% от активных
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Никогда не покупали</div>
+            <div class="card-value">{{ user_activity.never_ordered }}</div>
+            <div class="card-change">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                {% widthratio user_activity.never_ordered total_users 100 %}% от всех
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Registration Trend -->
+            <div class="dashboard-card mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Динамика регистраций</h6>
+                    <select class="form-select form-select-sm" style="width: auto;" id="regPeriod">
+                        <option value="12">12 месяцев</option>
+                        <option value="6">6 месяцев</option>
+                        <option value="3">3 месяца</option>
+                    </select>
+                </div>
+                <div class="chart-container">
+                    <canvas id="registrationChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- User Segmentation -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Сегментация пользователей</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Новые (без заказов)</span>
+                                <span class="fw-bold">{{ user_activity.never_ordered }}</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-secondary" 
+                                     style="width: {% widthratio user_activity.never_ordered total_users 100 %}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Однократные покупки</span>
+                                <span class="fw-bold">{{ user_activity.one_time_buyers }}</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-info" 
+                                     style="width: {% widthratio user_activity.one_time_buyers total_users 100 %}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Постоянные покупатели</span>
+                                <span class="fw-bold">{{ user_activity.repeat_buyers }}</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {% widthratio user_activity.repeat_buyers total_users 100 %}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Неактивные (30+ дней)</span>
+                                <span class="fw-bold">{{ inactive_users|default:"0" }}</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-warning" 
+                                     style="width: {% widthratio inactive_users|default:"0" total_users 100 %}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Рекомендация:</strong> Направьте email-рассылку {{ user_activity.never_ordered }} пользователям без покупок с промокодом на первую покупку
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- User Activity Overview -->
+            <div class="dashboard-card mb-4">
+                <h6 class="mb-3">Активность пользователей</h6>
+                
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Средний LTV</span>
+                            <span class="fw-bold">₽{{ avg_ltv|default:"0"|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Среднее время между заказами</span>
+                            <span class="fw-bold">{{ avg_days_between_orders|default:"0" }} дней</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Retention Rate (30 дней)</span>
+                            <span class="fw-bold">{{ retention_rate|default:"0" }}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Churn Rate (30 дней)</span>
+                            <span class="fw-bold text-danger">{{ churn_rate|default:"0" }}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Средний чек</span>
+                            <span class="fw-bold">₽{{ avg_order_value|default:"0"|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Customers -->
+            <div class="dashboard-card mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Топ покупателей</h6>
+                    <small class="text-muted">По сумме покупок</small>
+                </div>
+                
+                <div class="list-group list-group-flush">
+                    {% for customer in top_customers %}
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                                <i class="fas fa-crown text-warning"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small">{{ customer.username }}</div>
+                                <div class="small text-muted">{{ customer.email|truncatechars:20 }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold">₽{{ customer.total_spent|floatformat:2 }}</div>
+                                <div class="small text-muted">{{ customer.order_count }} заказов</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-users text-muted mb-2"></i>
+                        <p class="text-muted small mb-0">Нет данных о покупателях</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Управление пользователями</h6>
+                
+                <div class="d-grid gap-2">
+                    <a href="/admin/auth/user/add/" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i> Добавить пользователя
+                    </a>
+                    
+                    <a href="/admin/auth/user/" class="btn btn-outline-primary">
+                        <i class="fas fa-users-cog me-2"></i> Управление пользователями
+                    </a>
+                    
+                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#emailCampaignModal">
+                        <i class="fas fa-envelope me-2"></i> Создать рассылку
+                    </button>
+                    
+                    <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#segmentModal">
+                        <i class="fas fa-filter me-2"></i> Создать сегмент
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User List Table -->
+    <div class="dashboard-card mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Список пользователей</h6>
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" placeholder="Поиск пользователей..." id="userSearch">
+                <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover" id="usersTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Пользователь</th>
+                        <th>Email</th>
+                        <th>Дата регистрации</th>
+                        <th>Последний вход</th>
+                        <th>Заказы</th>
+                        <th>Сумма покупок</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users_list %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-2">
+                                    <i class="fas fa-user text-primary"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ user.username }}</div>
+                                    <small class="text-muted">{{ user.get_full_name|default:"Не указано" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.date_joined|date:"d.m.Y" }}</td>
+                        <td>{{ user.last_login|date:"d.m.Y H:i"|default:"Никогда" }}</td>
+                        <td>
+                            <span class="badge bg-{% if user.order_count > 0 %}primary{% else %}secondary{% endif %}">
+                                {{ user.order_count|default:"0" }}
+                            </span>
+                        </td>
+                        <td>₽{{ user.total_spent|default:"0"|floatformat:2 }}</td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-danger">Неактивен</span>
+                            {% endif %}
+                            
+                            {% if user.is_staff %}
+                            <span class="badge bg-warning ms-1">Staff</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        type="button" 
+                                        data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="/admin/auth/user/{{ user.id }}/change/">
+                                            <i class="fas fa-edit me-2"></i> Редактировать
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="fas fa-envelope me-2"></i> Отправить сообщение
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    {% if user.is_active %}
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="#">
+                                            <i class="fas fa-user-slash me-2"></i> Деактивировать
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li>
+                                        <a class="dropdown-item text-success" href="#">
+                                            <i class="fas fa-user-check me-2"></i> Активировать
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Нет пользователей</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if users_list.has_other_pages %}
+        <nav aria-label="Навигация по страницам" class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if users_list.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ users_list.previous_page_number }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for i in users_list.paginator.page_range %}
+                    {% if users_list.number == i %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ i }}</span>
+                    </li>
+                    {% elif i > users_list.number|add:'-3' and i < users_list.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if users_list.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ users_list.next_page_number }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="emailCampaignModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создать email-рассылку</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Сегмент получателей</label>
+                    <select class="form-select" id="emailSegment">
+                        <option value="all">Все пользователи</option>
+                        <option value="never_ordered">Никогда не покупали</option>
+                        <option value="one_time">Однократные покупки</option>
+                        <option value="repeat">Повторные покупатели</option>
+                        <option value="inactive">Неактивные (30+ дней)</option>
+                        <option value="high_value">VIP клиенты</option>
+                    </select>
+                    <small class="text-muted">Будет отправлено примерно: <span id="recipientCount">0</span> писем</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Тема письма</label>
+                    <input type="text" class="form-control" placeholder="Введите тему письма...">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Содержание письма</label>
+                    <textarea class="form-control" rows="6" placeholder="Введите текст письма..."></textarea>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Промокод (опционально)</label>
+                        <input type="text" class="form-control" placeholder="PROMO20">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Скидка %</label>
+                        <input type="number" class="form-control" min="5" max="50" value="10">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i> Отправить рассылку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="segmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создать сегмент пользователей</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Название сегмента</label>
+                    <input type="text" class="form-control" placeholder="Например: VIP клиенты">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Критерии отбора</label>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="criteriaOrders">
+                        <label class="form-check-label" for="criteriaOrders">
+                            Минимальное количество заказов
+                        </label>
+                        <input type="number" class="form-control form-control-sm d-inline-block ms-2" style="width: 80px;" value="3" disabled>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="criteriaAmount">
+                        <label class="form-check-label" for="criteriaAmount">
+                            Минимальная сумма покупок
+                        </label>
+                        <input type="number" class="form-control form-control-sm d-inline-block ms-2" style="width: 120px;" placeholder="₽" disabled>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="criteriaDays">
+                        <label class="form-check-label" for="criteriaDays">
+                            Активность за последние
+                        </label>
+                        <input type="number" class="form-control form-control-sm d-inline-block ms-2" style="width: 100px;" placeholder="дней" disabled>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Примерное количество:</strong> <span id="segmentCount">0</span> пользователей
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">Создать сегмент</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Parse JSON data from Django template
+const registrationStats = JSON.parse('{{ registration_stats|escapejs }}');
+
+// Registration Chart
+const regCtx = document.getElementById('registrationChart').getContext('2d');
+const regChart = new Chart(regCtx, {
+    type: 'bar',
+    data: {
+        labels: registrationStats.map(item => item.month),
+        datasets: [{
+            label: 'Новые пользователи',
+            data: registrationStats.map(item => item.count),
+            backgroundColor: 'rgba(111, 66, 193, 0.7)',
+            borderColor: '#6f42c1',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Количество пользователей'
+                }
+            }
+        }
+    }
+});
+
+// Period selector
+document.getElementById('regPeriod').addEventListener('change', function() {
+    // Здесь будет AJAX запрос для обновления данных
+    // fetch(`/dashboard/api/user-stats/?months=${this.value}`)
+    alert('Обновление данных для периода: ' + this.value + ' месяцев');
+});
+
+// User search
+document.getElementById('userSearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Email segment recipient count
+const segmentCounts = {
+    'all': {{ total_users }},
+    'never_ordered': {{ user_activity.never_ordered }},
+    'one_time': {{ user_activity.one_time_buyers }},
+    'repeat': {{ user_activity.repeat_buyers }},
+    'inactive': {{ inactive_users|default:"0" }},
+    'high_value': {{ top_customers|length }}
+};
+
+document.getElementById('emailSegment').addEventListener('change', function() {
+    const count = segmentCounts[this.value] || 0;
+    document.getElementById('recipientCount').textContent = count;
+});
+
+// Enable/disable criteria inputs
+document.querySelectorAll('.form-check-input').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const input = this.parentNode.querySelector('input[type="number"]');
+        if (input) {
+            input.disabled = !this.checked;
+        }
+    });
+});
+
+// Update segment count
+function updateSegmentCount() {
+    // Здесь будет расчет примерного количества пользователей в сегменте
+    const count = Math.floor(Math.random() * 100) + 10;
+    document.getElementById('segmentCount').textContent = count;
+}
+
+updateSegmentCount();
+
+// Initialize modals
+document.getElementById('emailSegment').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

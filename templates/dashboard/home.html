@@ -1,0 +1,348 @@
+<!-- templates/dashboard/home.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Главная панель - DigiMart Dashboard{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="dashboard-card">
+            <div class="card-title">Выручка сегодня</div>
+            <div class="card-value">₽{{ financial_summary.today.revenue|floatformat:2 }}</div>
+            <div class="card-change {% if financial_summary.today.revenue > financial_summary.week.avg_daily %}change-up{% else %}change-down{% endif %}">
+                <i class="fas fa-arrow-{% if financial_summary.today.revenue > financial_summary.week.avg_daily %}up{% else %}down{% endif %} me-1"></i>
+                {% widthratio financial_summary.today.revenue financial_summary.week.avg_daily 100 %}% от среднего
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Заказы сегодня</div>
+            <div class="card-value">{{ financial_summary.today.orders }}</div>
+            <div class="card-change">
+                <i class="fas fa-shopping-cart me-1"></i>
+                Средний чек: ₽{{ financial_summary.today.avg_order|floatformat:2 }}
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Новые пользователи</div>
+            <div class="card-value">+{{ new_users|length }}</div>
+            <div class="card-change change-up">
+                <i class="fas fa-user-plus me-1"></i>
+                Всего: {{ user_count|default:"0" }}
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Ожидающие оплаты</div>
+            <div class="card-value">₽{{ financial_summary.pending_payments|floatformat:2 }}</div>
+            <div class="card-change">
+                <i class="fas fa-clock me-1"></i>
+                {{ pending_orders_count }} заказов
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Sales Chart -->
+            <div class="dashboard-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Продажи за последние 7 дней</h6>
+                    <select class="form-select form-select-sm" style="width: auto;" id="salesPeriod">
+                        <option value="7">7 дней</option>
+                        <option value="30">30 дней</option>
+                        <option value="90">90 дней</option>
+                    </select>
+                </div>
+                <div class="chart-container">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Recent Orders -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Последние заказы</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>№ Заказа</th>
+                                <th>Покупатель</th>
+                                <th>Дата</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>
+                                    <strong>{{ order.order_number }}</strong>
+                                </td>
+                                <td>
+                                    {% if order.user %}
+                                    {{ order.user.email }}
+                                    {% else %}
+                                    {{ order.email }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>₽{{ order.total }}</td>
+                                <td>
+                                    <span class="badge badge-{{ order.status }}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="/admin/orders/order/{{ order.id }}/change/" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Просмотр">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="fas fa-shopping-basket fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Заказов пока нет</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Order Status Stats -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Статусы заказов</h6>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Оплаченные</span>
+                        <span class="fw-bold">{{ order_status_stats.paid }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" 
+                             style="width: {% widthratio order_status_stats.paid order_status_stats.total 100 %}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>В обработке</span>
+                        <span class="fw-bold">{{ order_status_stats.processing|default:"0" }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-primary" 
+                             style="width: {% widthratio order_status_stats.processing|default:"0" order_status_stats.total 100 %}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Ожидают оплаты</span>
+                        <span class="fw-bold">{{ order_status_stats.pending }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-warning" 
+                             style="width: {% widthratio order_status_stats.pending order_status_stats.total 100 %}%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Отмененные</span>
+                        <span class="fw-bold">{{ order_status_stats.cancelled }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-danger" 
+                             style="width: {% widthratio order_status_stats.cancelled order_status_stats.total 100 %}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Products -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Популярные товары</h6>
+                <div class="list-group list-group-flush">
+                    {% for product in popular_products %}
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ product.product__preview_image }}" 
+                                 class="rounded me-3" 
+                                 style="width: 40px; height: 40px; object-fit: cover;"
+                                 alt="{{ product.product__name }}">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small">{{ product.product__name|truncatechars:30 }}</div>
+                                <div class="small text-muted">{{ product.product__category__name }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold">₽{{ product.total_revenue|floatformat:2 }}</div>
+                                <div class="small text-muted">{{ product.total_sold }} шт</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-box-open text-muted mb-2"></i>
+                        <p class="text-muted small mb-0">Нет данных о продажах</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- New Users -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Новые пользователи</h6>
+                <div class="list-group list-group-flush">
+                    {% for user in new_users %}
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                                <i class="fas fa-user text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small">{{ user.username }}</div>
+                                <div class="small text-muted">{{ user.email|truncatechars:20 }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">{{ user.date_joined|date:"d.m.Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-users text-muted mb-2"></i>
+                        <p class="text-muted small mb-0">Нет новых пользователей</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sales Chart
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+const salesChart = new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Выручка',
+            data: [],
+            borderColor: '#6f42c1',
+            backgroundColor: 'rgba(111, 66, 193, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }, {
+            label: 'Заказы',
+            data: [],
+            borderColor: '#fd7e14',
+            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label === 'Выручка') {
+                            return label + ': ₽' + context.parsed.y.toFixed(2);
+                        } else {
+                            return label + ': ' + context.parsed.y;
+                        }
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        if (this.chart.data.datasets[0].label === 'Выручка') {
+                            return '₽' + value;
+                        }
+                        return value;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Load sales data
+function loadSalesData(days = 7) {
+    fetch(`/dashboard/api/stats/?days=${days}`)
+        .then(response => response.json())
+        .then(data => {
+            const salesData = data.sales_data;
+            
+            // Update chart
+            salesChart.data.labels = salesData.map(item => 
+                new Date(item.date).toLocaleDateString('ru-RU', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                })
+            );
+            salesChart.data.datasets[0].data = salesData.map(item => item.revenue);
+            salesChart.data.datasets[1].data = salesData.map(item => item.orders);
+            salesChart.update();
+            
+            // Update quick stats
+            if (data.financial_summary) {
+                document.querySelector('.card-value:nth-child(1)').textContent = 
+                    '₽' + data.financial_summary.today.revenue.toFixed(2);
+                document.querySelector('.card-value:nth-child(2)').textContent = 
+                    data.financial_summary.today.orders;
+            }
+        });
+}
+
+// Initial load
+loadSalesData(7);
+
+// Period selector
+document.getElementById('salesPeriod').addEventListener('change', function() {
+    loadSalesData(this.value);
+});
+
+// Auto-refresh every 5 minutes
+setInterval(() => {
+    const days = document.getElementById('salesPeriod').value;
+    loadSalesData(days);
+}, 300000);
+</script>
+{% endblock %}

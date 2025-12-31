@@ -12,6 +12,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
+
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -28,7 +32,11 @@ INSTALLED_APPS = [
     'orders.apps.OrdersConfig',
     'accounts.apps.AccountsConfig',
     'payments.apps.PaymentsConfig',
+    'dashboard.apps.DashboardConfig',
 ]
+
+DASHBOARD_PERMISSION = 'dashboard.view_dashboard'
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

@@ -1,13 +1,13 @@
-# create_test_data_fixed.py
 import os
 import django
 from django.utils.text import slugify
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'digimart.settings')
 django.setup()
-
+from django.contrib.auth import get_user_model
 from products.models import Category, Product, ProductFeature
-from django.contrib.auth.models import User
+
+User = get_user_model()
 
 def create_test_data():
     # Создаем категории с английскими slug

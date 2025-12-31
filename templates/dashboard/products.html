@@ -1,0 +1,601 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Аналитика товаров - DigiMart Dashboard{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Cards -->
+    <div class="stats-grid mb-4">
+        <div class="dashboard-card">
+            <div class="card-title">Всего товаров</div>
+            <div class="card-value">{{ product_stats.total }}</div>
+            <div class="card-change">
+                <i class="fas fa-box me-1"></i>
+                Активных: {{ product_stats.active }}
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Товаров со скидкой</div>
+            <div class="card-value">{{ product_stats.with_discount }}</div>
+            <div class="card-change">
+                <i class="fas fa-tag me-1"></i>
+                {% widthratio product_stats.with_discount product_stats.active 100 %}% от активных
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Рекомендуемые</div>
+            <div class="card-value">{{ product_stats.featured }}</div>
+            <div class="card-change">
+                <i class="fas fa-star me-1"></i>
+                {% widthratio product_stats.featured product_stats.active 100 %}% от активных
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-title">Без продаж</div>
+            <div class="card-value">{{ products_without_sales|length }}</div>
+            <div class="card-change">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Требуют внимания
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Category Distribution -->
+            <div class="dashboard-card mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Распределение товаров по категориям</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-primary active" data-chart="doughnut">
+                            <i class="fas fa-chart-pie"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" data-chart="bar">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="categoryDistributionChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Low Performing Products -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Товары с низкой конверсией</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Товар</th>
+                                <th>Категория</th>
+                                <th>Просмотры</th>
+                                <th>Продажи</th>
+                                <th>Конверсия</th>
+                                <th>Рекомендации</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in low_performing_products %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="{{ product.preview_image.url }}" 
+                                             class="rounded me-2" 
+                                             style="width: 40px; height: 40px; object-fit: cover;"
+                                             alt="{{ product.name }}">
+                                        <div>
+                                            <div class="fw-bold">{{ product.name|truncatechars:30 }}</div>
+                                            <small class="text-muted">ID: {{ product.id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ product.category.name }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ product.view_count }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ product.sales_count }}</span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-{% if product.calculated_conversion < 1 %}danger{% elif product.calculated_conversion < 5 %}warning{% else %}success{% endif %}" 
+                                            style="width: {% if product.calculated_conversion > 100 %}100{% else %}{{ product.calculated_conversion }}{% endif %}%"></div>
+                                    </div>
+                                    <small>{{ product.calculated_conversion }}%</small>
+                                </td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                type="button" 
+                                                data-bs-toggle="dropdown">
+                                            Действия
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="/admin/products/product/{{ product.id }}/change/">
+                                                    <i class="fas fa-edit me-2"></i> Редактировать
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'product_detail' product.slug %}" target="_blank">
+                                                    <i class="fas fa-external-link-alt me-2"></i> Посмотреть на сайте
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-tag me-2"></i> Добавить скидку
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-star me-2"></i> Сделать рекомендуемым
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="fas fa-thumbs-up fa-2x text-success mb-2"></i>
+                                    <p class="text-muted mb-0">Все товары хорошо продаются!</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Products Without Sales -->
+            <div class="dashboard-card mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Товары без продаж</h6>
+                    <span class="badge bg-warning">{{ products_without_sales|length }}</span>
+                </div>
+                
+                <div class="list-group list-group-flush">
+                    {% for product in products_without_sales %}
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex align-items-center">
+                            {% if product.preview_image %}
+                            <img src="{{ product.preview_image.url }}" 
+                            class="rounded me-2" 
+                            style="width: 40px; height: 40px; object-fit: cover;"
+                            alt="{{ product.name }}">
+                            {% else %}
+                            <div class="no-image-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <span>Нет изображения</span>
+                            </div>
+                            {% endif %}
+
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small">{{ product.name|truncatechars:25 }}</div>
+                                <div class="small text-muted">
+                                    Добавлен: {{ product.created_at|date:"d.m.Y" }}
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        type="button" 
+                                        data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="/admin/products/product/{{ product.id }}/change/">
+                                            <i class="fas fa-edit me-2"></i> Редактировать
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <p class="text-muted small mb-0">Все товары имеют продажи!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if products_without_sales %}
+                <div class="mt-3">
+                    <button class="btn btn-outline-warning btn-sm w-100" data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+                        <i class="fas fa-bolt me-1"></i> Массовые действия
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Быстрые действия</h6>
+                
+                <div class="d-grid gap-2">
+                    <a href="/admin/products/product/add/" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i> Добавить новый товар
+                    </a>
+                    
+                    <a href="/admin/products/product/" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i> Управление товарами
+                    </a>
+                    
+                    <a href="/admin/products/category/add/" class="btn btn-outline-secondary">
+                        <i class="fas fa-folder-plus me-2"></i> Добавить категорию
+                    </a>
+                    
+                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#bulkDiscountModal">
+                        <i class="fas fa-tag me-2"></i> Настроить скидки
+                    </button>
+                    
+                    <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#exportModal">
+                        <i class="fas fa-file-export me-2"></i> Экспорт товаров
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Product Performance Tips -->
+            <div class="dashboard-card mt-4">
+                <h6 class="mb-3">Советы по улучшению</h6>
+                
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                                <i class="fas fa-image text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold small">Улучшите изображения</div>
+                                <div class="small text-muted">Товары с качественными фото продаются на 30% лучше</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-2 me-3">
+                                <i class="fas fa-tag text-success"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold small">Добавьте скидки</div>
+                                <div class="small text-muted">Товары со скидкой привлекают больше внимания</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-2 me-3">
+                                <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold small">Отметьте как рекомендуемые</div>
+                                <div class="small text-muted">Рекомендуемые товары показываются на главной</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Массовые действия</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Выберите действие для товаров без продаж:</p>
+                
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="bulkAction" id="actionDiscount" checked>
+                    <label class="form-check-label" for="actionDiscount">
+                        <i class="fas fa-tag me-2"></i> Добавить скидку 20%
+                    </label>
+                </div>
+                
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="bulkAction" id="actionFeatured">
+                    <label class="form-check-label" for="actionFeatured">
+                        <i class="fas fa-star me-2"></i> Сделать рекомендуемыми
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="bulkAction" id="actionUpdate">
+                    <label class="form-check-label" for="actionUpdate">
+                        <i class="fas fa-sync-alt me-2"></i> Обновить описания
+                    </label>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Это действие применится к {{ products_without_sales|length }} товарам
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="bulkDiscountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Настройка скидок</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Размер скидки (%)</label>
+                    <input type="range" class="form-range" min="5" max="50" step="5" id="discountRange">
+                    <div class="d-flex justify-content-between">
+                        <small>5%</small>
+                        <small id="discountValue">20%</small>
+                        <small>50%</small>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Применить к</label>
+                    <select class="form-select" id="discountTarget">
+                        <option value="no_sales">Товарам без продаж</option>
+                        <option value="low_sales">Товарам с малым количеством продаж</option>
+                        <option value="old_products">Товарам старше 30 дней</option>
+                        <option value="all_active">Всем активным товарам</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Срок действия скидки</label>
+                    <div class="input-group">
+                        <input type="date" class="form-control" id="discountEndDate">
+                        <span class="input-group-text">
+                            <i class="fas fa-calendar-alt"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">Применить скидку</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Экспорт товаров</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Выберите формат и параметры экспорта:</p>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Формат</label>
+                        <select class="form-select">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Категория</label>
+                        <select class="form-select">
+                            <option value="">Все категории</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="includeInactive">
+                    <label class="form-check-label" for="includeInactive">
+                        Включать неактивные товары
+                    </label>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="includeSales" checked>
+                    <label class="form-check-label" for="includeSales">
+                        Включать статистику продаж
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i> Экспортировать
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Parse JSON data from Django template
+const categoryDistribution = JSON.parse('{{ category_distribution|escapejs }}');
+
+// Category Distribution Chart
+const categoryCtx = document.getElementById('categoryDistributionChart').getContext('2d');
+let categoryChart = new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: categoryDistribution.map(item => item.name),
+        datasets: [{
+            data: categoryDistribution.map(item => item.count),
+            backgroundColor: [
+                '#6f42c1', '#fd7e14', '#20c997', '#17a2b8', 
+                '#ffc107', '#dc3545', '#6610f2', '#6c757d',
+                '#28a745', '#007bff', '#e83e8c', '#6f42c1'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: {
+                    padding: 15,
+                    usePointStyle: true,
+                    font: {
+                        size: 11
+                    }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = Math.round((value / total) * 100);
+                        return `${label}: ${value} товаров (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Chart type toggle
+document.querySelectorAll('[data-chart]').forEach(button => {
+    button.addEventListener('click', function() {
+        const chartType = this.getAttribute('data-chart');
+        
+        // Update active state
+        document.querySelectorAll('[data-chart]').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        this.classList.add('active');
+        
+        // Update chart type
+        categoryChart.destroy();
+        categoryChart = new Chart(categoryCtx, {
+            type: chartType,
+            data: {
+                labels: categoryDistribution.map(item => item.name),
+                datasets: [{
+                    data: categoryDistribution.map(item => item.count),
+                    backgroundColor: chartType === 'bar' ? '#6f42c1' : [
+                        '#6f42c1', '#fd7e14', '#20c997', '#17a2b8', 
+                        '#ffc107', '#dc3545', '#6610f2', '#6c757d'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: chartType !== 'bar'
+                    }
+                },
+                scales: chartType === 'bar' ? {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Количество товаров'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                } : {}
+            }
+        });
+    });
+});
+
+// Discount range
+const discountRange = document.getElementById('discountRange');
+const discountValue = document.getElementById('discountValue');
+
+if (discountRange && discountValue) {
+    discountRange.addEventListener('input', function() {
+        discountValue.textContent = this.value + '%';
+    });
+}
+
+// Set default end date for discount (7 days from now)
+const discountEndDate = document.getElementById('discountEndDate');
+if (discountEndDate) {
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    const formattedDate = nextWeek.toISOString().split('T')[0];
+    discountEndDate.value = formattedDate;
+    discountEndDate.min = new Date().toISOString().split('T')[0];
+}
+
+// Bulk action confirmation
+document.querySelector('#bulkActionModal .btn-primary').addEventListener('click', function() {
+    const selectedAction = document.querySelector('input[name="bulkAction"]:checked').id;
+    const actionMap = {
+        'actionDiscount': 'Добавление скидки',
+        'actionFeatured': 'Отметка как рекомендуемых',
+        'actionUpdate': 'Обновление описаний'
+    };
+    
+    alert(`Будет выполнено: ${actionMap[selectedAction]}\n\nДля: ${productsWithoutSalesCount} товаров`);
+    
+    // Здесь будет AJAX запрос для выполнения действия
+    // fetch('/dashboard/api/bulk-action/', { ... })
+});
+
+// Export functionality
+document.querySelector('#exportModal .btn-primary').addEventListener('click', function() {
+    // Здесь будет логика экспорта
+    // fetch('/dashboard/api/export-products/', { ... })
+    
+    alert('Экспорт начат. Файл будет доступен для скачивания через несколько секунд.');
+});
+</script>
+
+{% if products_without_sales %}
+<script>
+const productsWithoutSalesCount = {{ products_without_sales|length }};
+</script>
+{% endif %}
+{% endblock %}

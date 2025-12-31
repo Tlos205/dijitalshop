@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from products.models import Product
+from django.contrib.auth import get_user_model
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -12,7 +13,7 @@ class Order(models.Model):
     ]
     
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
+        get_user_model(), 
         on_delete=models.CASCADE, 
         related_name='orders',
         verbose_name="Пользователь"

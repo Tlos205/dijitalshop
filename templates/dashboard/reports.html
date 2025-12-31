@@ -1,0 +1,783 @@
+<!-- templates/dashboard/reports.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Отчеты - DigiMart Dashboard{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Reports Header -->
+    <div class="dashboard-card mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-2">Генерация отчетов</h5>
+                <p class="text-muted mb-0">
+                    Создавайте и настраивайте автоматические отчеты для анализа вашего бизнеса
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createReportModal">
+                    <i class="fas fa-plus me-2"></i> Создать новый отчет
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Available Reports -->
+    <div class="dashboard-card mb-4">
+        <h6 class="mb-3">Доступные отчеты</h6>
+        
+        <div class="row g-4">
+            {% for report in reports %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card border h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                <i class="fas fa-{{ report.icon|default:'file-alt' }} text-primary fa-lg"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="card-title mb-1">{{ report.name }}</h6>
+                                <small class="text-muted">{{ report.description }}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-2">
+                                <i class="fas fa-file me-1"></i> {{ report.format }}
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                <i class="fas fa-clock me-1"></i> {{ report.schedule }}
+                            </span>
+                        </div>
+                        
+                        <div class="mt-auto">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary btn-sm generate-report" 
+                                        data-report-id="{{ report.id }}">
+                                    <i class="fas fa-play me-2"></i> Сгенерировать сейчас
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#scheduleModal{{ report.id }}">
+                                    <i class="fas fa-calendar-alt me-2"></i> Настроить расписание
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Scheduled Reports -->
+    <div class="dashboard-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Запланированные отчеты</h6>
+            <span class="badge bg-primary">{{ scheduled_reports|length }} активных</span>
+        </div>
+        
+        {% if scheduled_reports %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Отчет</th>
+                        <th>Расписание</th>
+                        <th>Формат</th>
+                        <th>Получатели</th>
+                        <th>Последний запуск</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for schedule in scheduled_reports %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ schedule.report_name }}</div>
+                            <small class="text-muted">{{ schedule.description }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ schedule.schedule }}</span>
+                        </td>
+                        <td>{{ schedule.format }}</td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for email in schedule.recipients %}
+                                <span class="badge bg-light text-dark">{{ email|truncatechars:15 }}</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if schedule.last_run %}
+                            {{ schedule.last_run|date:"d.m.Y H:i" }}
+                            {% else %}
+                            <span class="text-muted">Никогда</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if schedule.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Неактивен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        type="button" 
+                                        data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="runReportNow('{{ schedule.id }}')">
+                                            <i class="fas fa-play me-2"></i> Запустить сейчас
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                           data-bs-target="#editScheduleModal{{ schedule.id }}">
+                                            <i class="fas fa-edit me-2"></i> Редактировать
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="fas fa-user-plus me-2"></i> Добавить получателя
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    {% if schedule.is_active %}
+                                    <li>
+                                        <a class="dropdown-item text-warning" href="#" onclick="toggleSchedule('{{ schedule.id }}', false)">
+                                            <i class="fas fa-pause me-2"></i> Приостановить
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li>
+                                        <a class="dropdown-item text-success" href="#" onclick="toggleSchedule('{{ schedule.id }}', true)">
+                                            <i class="fas fa-play me-2"></i> Активировать
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="#" onclick="deleteSchedule('{{ schedule.id }}')">
+                                            <i class="fas fa-trash me-2"></i> Удалить
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+            <h6 class="mb-2">Нет запланированных отчетов</h6>
+            <p class="text-muted mb-3">Настройте автоматическую отправку отчетов по расписанию</p>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createScheduleModal">
+                <i class="fas fa-plus me-2"></i> Создать первое расписание
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Report History -->
+    <div class="dashboard-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">История отчетов</h6>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" style="width: 150px;" id="historyDate">
+                <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter"></i> Фильтр
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover" id="reportHistoryTable">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Отчет</th>
+                        <th>Тип</th>
+                        <th>Размер</th>
+                        <th>Статус</th>
+                        <th>Получатели</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for history in report_history %}
+                    <tr>
+                        <td>{{ history.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <div class="fw-bold">{{ history.report_name }}</div>
+                            <small class="text-muted">Период: {{ history.period }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">
+                                {{ history.format }}
+                            </span>
+                        </td>
+                        <td>{{ history.file_size }}</td>
+                        <td>
+                            {% if history.status == 'success' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i> Успешно
+                            </span>
+                            {% elif history.status == 'failed' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times me-1"></i> Ошибка
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock me-1"></i> В процессе
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ history.recipient_count }} получателей</small>
+                        </td>
+                        <td>
+                            {% if history.status == 'success' and history.download_url %}
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        type="button" 
+                                        data-bs-toggle="dropdown">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ history.download_url }}" download>
+                                            <i class="fas fa-file-download me-2"></i> Скачать
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ history.download_url }}" target="_blank">
+                                            <i class="fas fa-external-link-alt me-2"></i> Открыть
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="resendReport('{{ history.id }}')">
+                                            <i class="fas fa-paper-plane me-2"></i> Отправить снова
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                            {% elif history.status == 'failed' %}
+                            <button class="btn btn-sm btn-outline-warning" onclick="retryReport('{{ history.id }}')">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Нет истории отчетов</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if report_history.has_other_pages %}
+        <nav aria-label="Навигация по страницам" class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if report_history.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ report_history.previous_page_number }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for i in report_history.paginator.page_range %}
+                    {% if report_history.number == i %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ i }}</span>
+                    </li>
+                    {% elif i > report_history.number|add:'-3' and i < report_history.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if report_history.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ report_history.next_page_number }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="createReportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создать новый отчет</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Тип отчета</label>
+                    <select class="form-select" id="reportType">
+                        <option value="">Выберите тип отчета</option>
+                        {% for report in reports %}
+                        <option value="{{ report.id }}">{{ report.name }}</option>
+                        {% endfor %}
+                        <option value="custom">Пользовательский отчет</option>
+                    </select>
+                </div>
+                
+                <div id="reportSettings" class="d-none">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Период отчета</label>
+                            <select class="form-select" id="reportPeriod">
+                                <option value="today">Сегодня</option>
+                                <option value="yesterday">Вчера</option>
+                                <option value="this_week" selected>Эта неделя</option>
+                                <option value="last_week">Прошлая неделя</option>
+                                <option value="this_month">Этот месяц</option>
+                                <option value="last_month">Прошлый месяц</option>
+                                <option value="this_quarter">Этот квартал</option>
+                                <option value="last_quarter">Прошлый квартал</option>
+                                <option value="this_year">Этот год</option>
+                                <option value="custom">Произвольный период</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Формат</label>
+                            <select class="form-select" id="reportFormat">
+                                <option value="excel">Excel (.xlsx)</option>
+                                <option value="csv">CSV (.csv)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                                <option value="html">HTML (.html)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mt-2 d-none" id="customPeriodRow">
+                        <div class="col-md-6">
+                            <label class="form-label">С</label>
+                            <input type="date" class="form-control" id="reportStartDate">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">По</label>
+                            <input type="date" class="form-control" id="reportEndDate">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Получатели (через запятую)</label>
+                        <input type="text" class="form-control" 
+                               placeholder="email1@example.com, email2@example.com"
+                               value="{{ user.email }}">
+                        <small class="text-muted">Оставьте пустым, если не нужно отправлять по email</small>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="saveAsTemplate">
+                        <label class="form-check-label" for="saveAsTemplate">
+                            Сохранить как шаблон для повторного использования
+                        </label>
+                    </div>
+                    
+                    <div class="d-none" id="templateSettings">
+                        <div class="mb-3">
+                            <label class="form-label">Название шаблона</label>
+                            <input type="text" class="form-control" placeholder="Мой еженедельный отчет">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3 d-none" id="reportPreview">
+                    <h6 class="alert-heading">Предварительный просмотр:</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small>Тип отчета: <strong id="previewType"></strong></small><br>
+                            <small>Период: <strong id="previewPeriod"></strong></small>
+                        </div>
+                        <div class="col-6">
+                            <small>Формат: <strong id="previewFormat"></strong></small><br>
+                            <small>Получатели: <strong id="previewRecipients"></strong></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="generateReportBtn" disabled>
+                    <i class="fas fa-play me-2"></i> Сгенерировать отчет
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createScheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Настроить расписание отчета</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Отчет</label>
+                    <select class="form-select">
+                        <option value="">Выберите отчет</option>
+                        {% for report in reports %}
+                        <option value="{{ report.id }}">{{ report.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Расписание</label>
+                    <select class="form-select" id="scheduleFrequency">
+                        <option value="daily">Ежедневно</option>
+                        <option value="weekly" selected>Еженедельно</option>
+                        <option value="monthly">Ежемесячно</option>
+                        <option value="quarterly">Ежеквартально</option>
+                        <option value="yearly">Ежегодно</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3 d-none" id="weeklySettings">
+                    <label class="form-label">День недели</label>
+                    <select class="form-select">
+                        <option value="1">Понедельник</option>
+                        <option value="2">Вторник</option>
+                        <option value="3">Среда</option>
+                        <option value="4">Четверг</option>
+                        <option value="5">Пятница</option>
+                        <option value="6">Суббота</option>
+                        <option value="0">Воскресенье</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3 d-none" id="monthlySettings">
+                    <label class="form-label">День месяца</label>
+                    <input type="number" class="form-control" min="1" max="31" value="1">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Время отправки</label>
+                    <input type="time" class="form-control" value="09:00">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Получатели</label>
+                    <input type="text" class="form-control" 
+                           placeholder="email1@example.com, email2@example.com"
+                           value="{{ user.email }}">
+                </div>
+                
+                <div class="alert alert-success">
+                    <h6 class="alert-heading">Следующий запуск:</h6>
+                    <div id="nextRunPreview">Пятница, 09:00</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">Сохранить расписание</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Edit Modals -->
+{% for schedule in scheduled_reports %}
+<div class="modal fade" id="editScheduleModal{{ schedule.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать расписание</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content similar to createScheduleModal -->
+                <p>Редактирование расписания для {{ schedule.report_name }}</p>
+                <!-- Add form fields for editing -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">Сохранить изменения</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Report type selection
+document.getElementById('reportType').addEventListener('change', function() {
+    const reportSettings = document.getElementById('reportSettings');
+    const generateBtn = document.getElementById('generateReportBtn');
+    
+    if (this.value) {
+        reportSettings.classList.remove('d-none');
+        generateBtn.disabled = false;
+        updateReportPreview();
+    } else {
+        reportSettings.classList.add('d-none');
+        generateBtn.disabled = true;
+        document.getElementById('reportPreview').classList.add('d-none');
+    }
+});
+
+// Report period selection
+document.getElementById('reportPeriod').addEventListener('change', function() {
+    const customPeriodRow = document.getElementById('customPeriodRow');
+    
+    if (this.value === 'custom') {
+        customPeriodRow.classList.remove('d-none');
+    } else {
+        customPeriodRow.classList.add('d-none');
+    }
+    
+    updateReportPreview();
+});
+
+// Update report preview
+function updateReportPreview() {
+    const reportType = document.getElementById('reportType');
+    const reportPeriod = document.getElementById('reportPeriod');
+    const reportFormat = document.getElementById('reportFormat');
+    const preview = document.getElementById('reportPreview');
+    
+    if (reportType.value) {
+        const typeText = reportType.options[reportType.selectedIndex].text;
+        const periodText = reportPeriod.options[reportPeriod.selectedIndex].text;
+        const formatText = reportFormat.options[reportFormat.selectedIndex].text;
+        
+        document.getElementById('previewType').textContent = typeText;
+        document.getElementById('previewPeriod').textContent = periodText;
+        document.getElementById('previewFormat').textContent = formatText;
+        document.getElementById('previewRecipients').textContent = '1 получатель';
+        
+        preview.classList.remove('d-none');
+    }
+}
+
+// Schedule frequency
+document.getElementById('scheduleFrequency').addEventListener('change', function() {
+    const weeklySettings = document.getElementById('weeklySettings');
+    const monthlySettings = document.getElementById('monthlySettings');
+    
+    weeklySettings.classList.add('d-none');
+    monthlySettings.classList.add('d-none');
+    
+    if (this.value === 'weekly') {
+        weeklySettings.classList.remove('d-none');
+    } else if (this.value === 'monthly') {
+        monthlySettings.classList.remove('d-none');
+    }
+    
+    updateNextRunPreview();
+});
+
+// Update next run preview
+function updateNextRunPreview() {
+    const frequency = document.getElementById('scheduleFrequency').value;
+    let nextRun = '';
+    
+    switch(frequency) {
+        case 'daily':
+            nextRun = 'Завтра, 09:00';
+            break;
+        case 'weekly':
+            nextRun = 'Следующий понедельник, 09:00';
+            break;
+        case 'monthly':
+            nextRun = '1-е число следующего месяца, 09:00';
+            break;
+        case 'quarterly':
+            nextRun = 'Следующий квартал, 09:00';
+            break;
+        case 'yearly':
+            nextRun = '1 января, 09:00';
+            break;
+    }
+    
+    document.getElementById('nextRunPreview').textContent = nextRun;
+}
+
+// Save as template toggle
+document.getElementById('saveAsTemplate').addEventListener('change', function() {
+    const templateSettings = document.getElementById('templateSettings');
+    templateSettings.classList.toggle('d-none', !this.checked);
+});
+
+// Generate report button
+document.getElementById('generateReportBtn').addEventListener('click', function() {
+    const reportType = document.getElementById('reportType').value;
+    const reportPeriod = document.getElementById('reportPeriod').value;
+    const reportFormat = document.getElementById('reportFormat').value;
+    
+    // Show loading state
+    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Генерация...';
+    this.disabled = true;
+    
+    // Simulate report generation
+    setTimeout(() => {
+        alert('Отчет успешно сгенерирован! Файл будет доступен для скачивания.');
+        this.innerHTML = '<i class="fas fa-play me-2"></i> Сгенерировать отчет';
+        this.disabled = false;
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createReportModal'));
+        modal.hide();
+    }, 2000);
+});
+
+// Generate report from cards
+document.querySelectorAll('.generate-report').forEach(button => {
+    button.addEventListener('click', function() {
+        const reportId = this.getAttribute('data-report-id');
+        
+        // Show loading state
+        const originalText = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Генерация...';
+        this.disabled = true;
+        
+        // Generate report
+        fetch(`/dashboard/api/generate-report/${reportId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Отчет успешно сгенерирован!');
+                } else {
+                    alert('Ошибка генерации отчета: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Ошибка генерации отчета');
+            })
+            .finally(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+            });
+    });
+});
+
+// Report history filtering
+document.getElementById('historyDate').addEventListener('change', function() {
+    const date = this.value;
+    const rows = document.querySelectorAll('#reportHistoryTable tbody tr');
+    
+    rows.forEach(row => {
+        const rowDate = row.cells[0].textContent.split(' ')[0]; // Get date part
+        const formattedRowDate = rowDate.split('.').reverse().join('-');
+        
+        row.style.display = (!date || formattedRowDate === date) ? '' : 'none';
+    });
+});
+
+// Report actions
+function runReportNow(scheduleId) {
+    if (confirm('Запустить отчет сейчас?')) {
+        fetch(`/dashboard/api/run-schedule/${scheduleId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Отчет запущен!');
+                }
+            });
+    }
+}
+
+function toggleSchedule(scheduleId, activate) {
+    const action = activate ? 'активировать' : 'приостановить';
+    if (confirm(`Вы уверены, что хотите ${action} это расписание?`)) {
+        fetch(`/dashboard/api/toggle-schedule/${scheduleId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ active: activate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function deleteSchedule(scheduleId) {
+    if (confirm('Вы уверены, что хотите удалить это расписание?')) {
+        fetch(`/dashboard/api/delete-schedule/${scheduleId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function resendReport(reportId) {
+    if (confirm('Отправить отчет снова?')) {
+        fetch(`/dashboard/api/resend-report/${reportId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Отчет отправлен!');
+                }
+            });
+    }
+}
+
+function retryReport(reportId) {
+    if (confirm('Повторить попытку генерации отчета?')) {
+        fetch(`/dashboard/api/retry-report/${reportId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Отчет перезапущен!');
+                }
+            });
+    }
+}
+
+// Helper function to get CSRF token
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Initialize
+updateNextRunPreview();
+</script>
+{% endblock %}

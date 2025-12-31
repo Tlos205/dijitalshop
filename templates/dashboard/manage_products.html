@@ -1,0 +1,1449 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Управление товарами - DigiMart Dashboard{% endblock %}
+
+{% block page_title %}Управление товарами{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Quick Actions -->
+    <div class="dashboard-card mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-2">Управление товарами и категориями</h5>
+                <p class="text-muted mb-0">Добавляйте, редактируйте и управляйте товарами прямо из панели управления</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-plus me-2"></i> Добавить новый
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                <i class="fas fa-box me-2"></i> Товар
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                <i class="fas fa-folder me-2"></i> Категорию
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+                                <i class="fas fa-file-upload me-2"></i> Массовая загрузка
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Management Tabs -->
+    <div class="dashboard-card mb-4">
+        <ul class="nav nav-tabs dashboard-tabs" id="productsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products">
+                    <i class="fas fa-box me-2"></i> Товары
+                    <span class="badge bg-primary ms-2">{{ products_count }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories">
+                    <i class="fas fa-folder me-2"></i> Категории
+                    <span class="badge bg-primary ms-2">{{ categories_count }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory">
+                    <i class="fas fa-warehouse me-2"></i> Инвентарь
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import">
+                    <i class="fas fa-file-import me-2"></i> Импорт/Экспорт
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content pt-4">
+            <!-- Products Tab -->
+            <div class="tab-pane fade show active" id="products" role="tabpanel">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" placeholder="Поиск товаров..." id="productSearch">
+                            <button class="btn btn-outline-secondary" type="button" id="productSearchBtn">
+                                Найти
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <select class="form-select" style="width: auto;" id="productFilter">
+                                <option value="all">Все товары</option>
+                                <option value="active">Только активные</option>
+                                <option value="inactive">Только неактивные</option>
+                                <option value="featured">Рекомендуемые</option>
+                                <option value="discount">Со скидкой</option>
+                                <option value="no_sales">Без продаж</option>
+                            </select>
+                            <select class="form-select" style="width: auto;" id="productSort">
+                                <option value="newest">Сначала новые</option>
+                                <option value="oldest">Сначала старые</option>
+                                <option value="name_asc">По имени (А-Я)</option>
+                                <option value="name_desc">По имени (Я-А)</option>
+                                <option value="price_asc">По цене (дешевые)</option>
+                                <option value="price_desc">По цене (дорогие)</option>
+                                <option value="sales_desc">По продажам</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">
+                                    <input type="checkbox" id="selectAllProducts">
+                                </th>
+                                <th>Товар</th>
+                                <th>Категория</th>
+                                <th>Цена</th>
+                                <th>Продажи</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr data-product-id="{{ product.id }}" class="product-row">
+                                <td>
+                                    <input type="checkbox" class="product-checkbox" value="{{ product.id }}">
+                                </td>
+                                <td>
+                                    {% if  product.preview_image%}
+                                    <div class="d-flex align-items-center">
+                                        <img src="{{ product.preview_image.url }}" 
+                                        class="rounded me-3" 
+                                        style="width: 50px; height: 50px; object-fit: cover;"
+                                        alt="{{ product.name }}">
+                                        <div>
+                                            <div class="fw-bold">{{ product.name }}</div>
+                                            <small class="text-muted">ID: {{ product.id }} | {{ product.get_product_type_display }}</small>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="no-image-placeholder">
+                                        <i class="fas fa-image"></i>
+                                        <span>Нет изображения</span>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ product.category.name }}</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold {% if product.has_discount %}text-danger{% endif %}">
+                                        ₽{{ product.current_price }}
+                                    </div>
+                                    {% if product.has_discount %}
+                                    <small class="text-muted text-decoration-line-through">₽{{ product.price }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <span class="badge bg-primary">{{ product.sales_count }}</span>
+                                            <small class="text-muted">продаж</small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-info">{{ product.view_count }}</span>
+                                            <small class="text-muted">просмотров</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input toggle-product-status" 
+                                               type="checkbox" 
+                                               data-product-id="{{ product.id }}"
+                                               {% if product.is_active %}checked{% endif %}>
+                                        <label class="form-check-label">
+                                            {% if product.is_active %}
+                                            <span class="badge bg-success">Активен</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Неактивен</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    {% if product.is_featured %}
+                                    <span class="badge bg-warning mt-1">Рекомендуемый</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                type="button" 
+                                                data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'product_detail' product.get_slug_or_id %}" target="_blank">
+                                                    <i class="fas fa-eye me-2"></i> Просмотреть на сайте
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item edit-product" href="#" 
+                                                   data-product-id="{{ product.id }}"
+                                                   data-bs-toggle="modal" 
+                                                   data-bs-target="#editProductModal">
+                                                    <i class="fas fa-edit me-2"></i> Редактировать
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                   data-bs-target="#duplicateProductModal{{ product.id }}">
+                                                    <i class="fas fa-copy me-2"></i> Дублировать
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                {% if product.is_featured %}
+                                                <a class="dropdown-item remove-featured" href="#" data-product-id="{{ product.id }}">
+                                                    <i class="fas fa-star me-2"></i> Убрать из рекомендуемых
+                                                </a>
+                                                {% else %}
+                                                <a class="dropdown-item add-featured" href="#" data-product-id="{{ product.id }}">
+                                                    <i class="fas fa-star me-2"></i> Сделать рекомендуемым
+                                                </a>
+                                                {% endif %}
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                   data-bs-target="#discountModal{{ product.id }}">
+                                                    <i class="fas fa-tag me-2"></i> Установить скидку
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger delete-product" href="#" 
+                                                   data-product-id="{{ product.id }}"
+                                                   data-product-name="{{ product.name }}">
+                                                    <i class="fas fa-trash me-2"></i> Удалить
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bulk Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <span class="text-muted me-3">Выбрано: <span id="selectedCount">0</span> товаров</span>
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown" id="bulkActionsBtn" disabled>
+                                Массовые действия
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item bulk-action" href="#" data-action="activate">
+                                        <i class="fas fa-check-circle me-2"></i> Активировать
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item bulk-action" href="#" data-action="deactivate">
+                                        <i class="fas fa-ban me-2"></i> Деактивировать
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item bulk-action" href="#" data-action="featured">
+                                        <i class="fas fa-star me-2"></i> Сделать рекомендуемыми
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item bulk-action" href="#" data-action="unfeatured">
+                                        <i class="fas fa-star me-2"></i> Убрать из рекомендуемых
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item bulk-action text-danger" href="#" data-action="delete">
+                                        <i class="fas fa-trash me-2"></i> Удалить
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <nav>
+                        <ul class="pagination mb-0">
+                            <li class="page-item">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Categories Tab -->
+            <div class="tab-pane fade" id="categories" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="dashboard-card">
+                            <h6 class="mb-3">Добавить категорию</h6>
+                            <form id="addCategoryForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Название категории</label>
+                                    <input type="text" class="form-control" name="name" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">URL slug</label>
+                                    <input type="text" class="form-control" name="slug" placeholder="Будет сгенерирован автоматически">
+                                    <small class="text-muted">Используется в URL (например: shablony-saitov)</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Описание</label>
+                                    <textarea class="form-control" name="description" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Изображение категории</label>
+                                    <input type="file" class="form-control" name="image" accept="image/*">
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="is_active" checked>
+                                    <label class="form-check-label">
+                                        Активная категория
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus me-2"></i> Добавить категорию
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-8">
+                        <div class="dashboard-card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Все категории</h6>
+                                <span class="badge bg-primary">{{ categories|length }} категорий</span>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Категория</th>
+                                            <th>Товаров</th>
+                                            <th>Продажи</th>
+                                            <th>Статус</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for category in categories %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if category.image %}
+                                                    <img src="{{ category.image.url }}" 
+                                                         class="rounded me-3" 
+                                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                                         alt="{{ category.name }}">
+                                                    {% else %}
+                                                    <div class="rounded bg-light p-2 me-3">
+                                                        <i class="fas fa-folder text-primary"></i>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <div class="fw-bold">{{ category.name }}</div>
+                                                        <small class="text-muted">/{{ category.slug }}/</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ category.product_count }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">{{ category.total_sales|default:"0" }}</span>
+                                            </td>
+                                            <td>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input toggle-category-status" 
+                                                           type="checkbox" 
+                                                           data-category-id="{{ category.id }}"
+                                                           {% if category.is_active %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        {% if category.is_active %}
+                                                        <span class="badge bg-success">Активна</span>
+                                                        {% else %}
+                                                        <span class="badge bg-secondary">Неактивна</span>
+                                                        {% endif %}
+                                                    </label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                            type="button" 
+                                                            data-bs-toggle="dropdown">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li>
+                                                            <a class="dropdown-item edit-category" href="#" 
+                                                               data-category-id="{{ category.id }}"
+                                                               data-bs-toggle="modal" 
+                                                               data-bs-target="#editCategoryModal">
+                                                                <i class="fas fa-edit me-2"></i> Редактировать
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="{% url 'category_detail' category.slug %}" target="_blank">
+                                                                <i class="fas fa-eye me-2"></i> Просмотреть на сайте
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger delete-category" href="#" 
+                                                               data-category-id="{{ category.id }}"
+                                                               data-category-name="{{ category.name }}">
+                                                                <i class="fas fa-trash me-2"></i> Удалить
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div class="tab-pane fade" id="inventory" role="tabpanel">
+                <div class="dashboard-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">Управление инвентарем</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateInventoryModal">
+                            <i class="fas fa-sync-alt me-2"></i> Обновить инвентарь
+                        </button>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Для цифровых товаров управление инвентарем включает контроль лицензий, версий файлов и доступности
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-primary bg-opacity-10">
+                                <div class="card-body text-center">
+                                    <div class="text-primary fw-bold fs-4">{{ total_products }}</div>
+                                    <small class="text-muted">Всего товаров</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-success bg-opacity-10">
+                                <div class="card-body text-center">
+                                    <div class="text-success fw-bold fs-4">{{ active_products }}</div>
+                                    <small class="text-muted">Активных товаров</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-warning bg-opacity-10">
+                                <div class="card-body text-center">
+                                    <div class="text-warning fw-bold fs-4">{{ low_performance_count }}</div>
+                                    <small class="text-muted">Требуют внимания</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6 class="mb-3">Товары требующие обновления</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Товар</th>
+                                        <th>Последнее обновление</th>
+                                        <th>Версия</th>
+                                        <th>Статус файла</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in needs_update %}
+                                    <tr>
+                                        <td>{{ product.name }}</td>
+                                        <td>{{ product.updated_at|date:"d.m.Y" }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if product.version_outdated %}warning{% else %}info{% endif %}">
+                                                {{ product.version|default:"1.0" }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if product.file_exists %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i> Файл доступен
+                                            </span>
+                                            {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i> Файл отсутствует
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary update-file" 
+                                                    data-product-id="{{ product.id }}">
+                                                <i class="fas fa-upload me-1"></i> Обновить файл
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                            <p class="text-muted mb-0">Все товары актуальны</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import/Export Tab -->
+            <div class="tab-pane fade" id="import" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card h-100">
+                            <h6 class="mb-3">Импорт товаров</h6>
+                            
+                            <div class="mb-4">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Поддерживаемые форматы: CSV, Excel (.xlsx, .xls)
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Выберите файл для импорта</label>
+                                    <input type="file" class="form-control" id="importFile" accept=".csv,.xlsx,.xls">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Настройки импорта</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="updateExisting" checked>
+                                        <label class="form-check-label" for="updateExisting">
+                                            Обновлять существующие товары
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="importImages">
+                                        <label class="form-check-label" for="importImages">
+                                            Импортировать изображения (URL)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="importFiles">
+                                        <label class="form-check-label" for="importFiles">
+                                            Импортировать файлы (URL)
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary w-100" id="startImport">
+                                    <i class="fas fa-file-import me-2"></i> Начать импорт
+                                </button>
+                            </div>
+                            
+                            <div class="progress d-none" id="importProgress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="dashboard-card h-100">
+                            <h6 class="mb-3">Экспорт товаров</h6>
+                            
+                            <div class="mb-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Формат экспорта</label>
+                                    <select class="form-select" id="exportFormat">
+                                        <option value="csv">CSV (.csv)</option>
+                                        <option value="excel" selected>Excel (.xlsx)</option>
+                                        <option value="json">JSON (.json)</option>
+                                        <option value="xml">XML (.xml)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Категория</label>
+                                    <select class="form-select" id="exportCategory">
+                                        <option value="">Все категории</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Поля для экспорта</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="exportName" checked>
+                                                <label class="form-check-label" for="exportName">Название</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="exportPrice" checked>
+                                                <label class="form-check-label" for="exportPrice">Цена</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="exportCategoryField" checked>
+                                                <label class="form-check-label" for="exportCategoryField">Категория</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="exportSales" checked>
+                                                <label class="form-check-label" for="exportSales">Продажи</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="exportStatus" checked>
+                                                <label class="form-check-label" for="exportStatus">Статус</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="exportDescription">
+                                                <label class="form-check-label" for="exportDescription">Описание</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-success w-100" id="startExport">
+                                    <i class="fas fa-file-export me-2"></i> Экспортировать товары
+                                </button>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">Шаблоны для импорта</h6>
+                                <p class="mb-2">Скачайте шаблон для заполнения:</p>
+                                <div class="d-flex gap-2">
+                                    <a href="#" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-download me-1"></i> CSV шаблон
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-download me-1"></i> Excel шаблон
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить новый товар</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Название товара *</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Категория *</label>
+                                <select class="form-select" name="category" required>
+                                    <option value="">Выберите категорию</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Тип товара</label>
+                                <select class="form-select" name="product_type">
+                                    {% for type_key, type_name in product_types %}
+                                    <option value="{{ type_key }}">{{ type_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Цена (₽) *</label>
+                                        <input type="number" class="form-control" name="price" step="0.01" min="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Цена со скидкой</label>
+                                        <input type="number" class="form-control" name="discount_price" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Краткое описание *</label>
+                                <textarea class="form-control" name="short_description" rows="3" required></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Полное описание</label>
+                                <textarea class="form-control" name="description" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Теги (через запятую)</label>
+                                <input type="text" class="form-control" name="tags" placeholder="шаблон, сайт, бизнес">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Основное изображение *</label>
+                                <input type="file" class="form-control" name="preview_image" accept="image/*" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Дополнительные изображения</label>
+                                <input type="file" class="form-control" name="additional_images" accept="image/*" multiple>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Файл товара *</label>
+                                <input type="file" class="form-control" name="file" required>
+                                <small class="text-muted">Максимальный размер: 100MB</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Формат файла</label>
+                                <input type="text" class="form-control" name="file_format" placeholder="ZIP, PDF, PSD...">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Размер файла</label>
+                                <input type="text" class="form-control" name="file_size" placeholder="50 MB">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Версия</label>
+                                <input type="text" class="form-control" name="version" placeholder="1.0">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Совместимость</label>
+                                <input type="text" class="form-control" name="compatibility" placeholder="Windows 10+, Photoshop CC">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_active" checked>
+                        <label class="form-check-label">
+                            Активный товар
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_featured">
+                        <label class="form-check-label">
+                            Рекомендуемый товар
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" form="addProductForm" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Добавить товар
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal (динамически заполняется) -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать товар</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" id="editProductId">
+                    <!-- Форма будет заполнена JavaScript -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" form="editProductForm" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> Сохранить изменения
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить новую категорию</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCategoryFormModal">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Название категории *</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Изображение категории</label>
+                        <input type="file" class="form-control" name="image" accept="image/*">
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_active" checked>
+                        <label class="form-check-label">
+                            Активная категория
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" form="addCategoryFormModal" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Добавить категорию
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Массовая загрузка товаров</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Загрузите ZIP-архив с товарами. Каждый товар должен быть в отдельной папке с файлами.
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">ZIP архив с товарами</label>
+                    <input type="file" class="form-control" accept=".zip">
+                    <small class="text-muted">Максимальный размер: 500MB</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Структура архива:</label>
+                    <pre class="bg-light p-3 rounded">
+products.zip
+├── product-1/
+│   ├── product.json (метаданные)
+│   ├── preview.jpg (изображение)
+│   └── files.zip (файлы товара)
+├── product-2/
+│   └── ...
+└── categories.json (опционально)
+                    </pre>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="autoCreateCategories" checked>
+                    <label class="form-check-label" for="autoCreateCategories">
+                        Автоматически создавать категории
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="publishProducts" checked>
+                    <label class="form-check-label" for="publishProducts">
+                        Опубликовать товары сразу
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-upload me-2"></i> Начать загрузку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Inventory Modal -->
+<div class="modal fade" id="updateInventoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Обновление инвентаря</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Выберите действие для обновления инвентаря:</p>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="inventoryAction" id="actionScan" checked>
+                    <label class="form-check-label" for="actionScan">
+                        Сканировать файлы товаров
+                    </label>
+                    <small class="text-muted d-block">Проверить доступность всех файлов товаров</small>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="inventoryAction" id="actionUpdateVersions">
+                    <label class="form-check-label" for="actionUpdateVersions">
+                        Обновить версии товаров
+                    </label>
+                    <small class="text-muted d-block">Автоматически увеличить версии устаревших товаров</small>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="inventoryAction" id="actionGenerateThumbnails">
+                    <label class="form-check-label" for="actionGenerateThumbnails">
+                        Сгенерировать миниатюры
+                    </label>
+                    <small class="text-muted d-block">Создать миниатюры для товаров без изображений</small>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="inventoryAction" id="actionCleanup">
+                    <label class="form-check-label" for="actionCleanup">
+                        Очистка неиспользуемых файлов
+                    </label>
+                    <small class="text-muted d-block">Удалить файлы, не связанные с товарами</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i> Выполнить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Discount Modals for each product -->
+{% for product in products %}
+<div class="modal fade" id="discountModal{{ product.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Установить скидку для {{ product.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="discountForm{{ product.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Размер скидки (%)</label>
+                        <input type="number" class="form-control" name="discount_percent" 
+                               min="1" max="99" value="{% if product.has_discount %}{{ product.discount_price }}{% else %}{{ product.price|floatformat:2 }}{% endif %}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Новая цена</label>
+                        <input type="number" class="form-control" name="discount_price" 
+                            step="0.01" min="0" 
+                            value="{% if product.has_discount %}{{ product.discount_price }}{% else %}{{ product.price|floatformat:2 }}{% endif %}"
+                            id="discountPrice{{ product.id }}">
+                        <small class="text-muted">Текущая цена: ₽{{ product.price }}</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Срок действия скидки</label>
+                        <div class="input-group">
+                            <input type="date" class="form-control" name="discount_end_date">
+                            <span class="input-group-text">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                        </div>
+                        <small class="text-muted">Оставьте пустым для бессрочной скидки</small>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="notify_users" checked>
+                        <label class="form-check-label">
+                            Уведомить пользователей, которые добавили товар в избранное
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                {% if product.has_discount %}
+                <button type="button" class="btn btn-danger remove-discount" data-product-id="{{ product.id }}">
+                    Убрать скидку
+                </button>
+                {% endif %}
+                <button type="submit" form="discountForm{{ product.id }}" class="btn btn-primary">
+                    Применить скидку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate Product Modal -->
+<div class="modal fade" id="duplicateProductModal{{ product.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Дублировать товар</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="duplicateForm{{ product.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Название нового товара</label>
+                        <input type="text" class="form-control" name="new_name" 
+                               value="Копия - {{ product.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Что дублировать:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="duplicate_files" checked>
+                            <label class="form-check-label">
+                                Файлы товара
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="duplicate_images" checked>
+                            <label class="form-check-label">
+                                Изображения
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="duplicate_attributes" checked>
+                            <label class="form-check-label">
+                                Атрибуты и характеристики
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="publish_copy" checked>
+                        <label class="form-check-label">
+                            Опубликовать копию сразу
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" form="duplicateForm{{ product.id }}" class="btn btn-primary">
+                    <i class="fas fa-copy me-2"></i> Дублировать
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Edit Category Modal (динамически заполняется) -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать категорию</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCategoryForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="category_id" id="editCategoryId">
+                    <!-- Форма будет заполнена JavaScript -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="submit" form="editCategoryForm" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> Сохранить изменения
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Product Search
+document.getElementById('productSearchBtn').addEventListener('click', function() {
+    const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#productsTable .product-row');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Product Filter
+document.getElementById('productFilter').addEventListener('change', function() {
+    const filter = this.value;
+    // Здесь будет логика фильтрации товаров
+    console.log('Filter changed to:', filter);
+});
+
+// Product Sort
+document.getElementById('productSort').addEventListener('change', function() {
+    const sort = this.value;
+    // Здесь будет логика сортировки товаров
+    console.log('Sort changed to:', sort);
+});
+
+// Select All Products
+document.getElementById('selectAllProducts').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+    updateSelectedCount();
+});
+
+// Update Selected Count
+function updateSelectedCount() {
+    const selected = document.querySelectorAll('.product-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = selected;
+    
+    const bulkBtn = document.getElementById('bulkActionsBtn');
+    bulkBtn.disabled = selected === 0;
+}
+
+document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectedCount);
+});
+
+// Bulk Actions
+document.querySelectorAll('.bulk-action').forEach(action => {
+    action.addEventListener('click', function(e) {
+        e.preventDefault();
+        const actionType = this.getAttribute('data-action');
+        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        if (selectedIds.length === 0) {
+            alert('Выберите хотя бы один товар');
+            return;
+        }
+        
+        if (confirm(`Вы уверены, что хотите выполнить действие "${actionType}" для ${selectedIds.length} товаров?`)) {
+            // Отправляем AJAX запрос
+            fetch('/dashboard/api/bulk-product-action/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: actionType,
+                    product_ids: selectedIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Действие выполнено успешно!');
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Ошибка выполнения действия');
+            });
+        }
+    });
+});
+
+// Toggle Product Status
+document.querySelectorAll('.toggle-product-status').forEach(toggle => {
+    toggle.addEventListener('change', function() {
+        const productId = this.getAttribute('data-product-id');
+        const isActive = this.checked;
+        
+        fetch(`/dashboard/api/toggle-product-status/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_active: isActive })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                // Возвращаем переключатель в исходное состояние
+                this.checked = !isActive;
+                alert('Ошибка обновления статуса');
+            }
+        });
+    });
+});
+
+// Edit Product
+document.querySelectorAll('.edit-product').forEach(button => {
+    button.addEventListener('click', function() {
+        const productId = this.getAttribute('data-product-id');
+        
+        // Загружаем данные товара
+        fetch(`/dashboard/api/get-product/${productId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fillEditForm(data.product);
+                } else {
+                    alert('Ошибка загрузки данных товара');
+                }
+            });
+    });
+});
+
+function fillEditForm(product) {
+    document.getElementById('editProductId').value = product.id;
+    
+    // Заполняем форму данными товара
+    const form = document.getElementById('editProductForm');
+    // ... заполнение полей формы ...
+    
+    console.log('Editing product:', product);
+}
+
+// Delete Product
+document.querySelectorAll('.delete-product').forEach(button => {
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const productId = this.getAttribute('data-product-id');
+        const productName = this.getAttribute('data-product-name');
+        
+        if (confirm(`Вы уверены, что хотите удалить товар "${productName}"?`)) {
+            fetch(`/dashboard/api/delete-product/${productId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Товар удален успешно!');
+                    location.reload();
+                } else {
+                    alert('Ошибка удаления товара');
+                }
+            });
+        }
+    });
+});
+
+// Add Category Form
+document.getElementById('addCategoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/dashboard/api/add-category/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Категория добавлена успешно!');
+            location.reload();
+        } else {
+            alert('Ошибка добавления категории: ' + data.error);
+        }
+    });
+});
+
+// Toggle Category Status
+document.querySelectorAll('.toggle-category-status').forEach(toggle => {
+    toggle.addEventListener('change', function() {
+        const categoryId = this.getAttribute('data-category-id');
+        const isActive = this.checked;
+        
+        fetch(`/dashboard/api/toggle-category-status/${categoryId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_active: isActive })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                this.checked = !isActive;
+                alert('Ошибка обновления статуса категории');
+            }
+        });
+    });
+});
+
+// Import/Export
+document.getElementById('startImport').addEventListener('click', function() {
+    const fileInput = document.getElementById('importFile');
+    if (!fileInput.files.length) {
+        alert('Выберите файл для импорта');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('update_existing', document.getElementById('updateExisting').checked);
+    formData.append('import_images', document.getElementById('importImages').checked);
+    formData.append('import_files', document.getElementById('importFiles').checked);
+    
+    const progress = document.getElementById('importProgress');
+    progress.classList.remove('d-none');
+    
+    // Имитация прогресса
+    let width = 0;
+    const interval = setInterval(() => {
+        width += 10;
+        progress.querySelector('.progress-bar').style.width = width + '%';
+        
+        if (width >= 100) {
+            clearInterval(interval);
+            alert('Импорт завершен успешно!');
+            progress.classList.add('d-none');
+            location.reload();
+        }
+    }, 500);
+});
+
+document.getElementById('startExport').addEventListener('click', function() {
+    const format = document.getElementById('exportFormat').value;
+    const category = document.getElementById('exportCategory').value;
+    
+    // Собираем выбранные поля
+    const fields = [];
+    if (document.getElementById('exportName').checked) fields.push('name');
+    if (document.getElementById('exportPrice').checked) fields.push('price');
+    if (document.getElementById('exportCategoryField').checked) fields.push('category');
+    if (document.getElementById('exportSales').checked) fields.push('sales');
+    if (document.getElementById('exportStatus').checked) fields.push('status');
+    if (document.getElementById('exportDescription').checked) fields.push('description');
+    
+    // Формируем URL для экспорта
+    const url = `/dashboard/api/export-products/?format=${format}&category=${category}&fields=${fields.join(',')}`;
+    
+    // Скачиваем файл
+    window.location.href = url;
+});
+
+// Helper function to get CSRF token
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Initialize
+updateSelectedCount();
+</script>
+{% endblock %}

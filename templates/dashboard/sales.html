@@ -1,0 +1,375 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Аналитика продаж - DigiMart Dashboard{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Filters -->
+    <div class="dashboard-card mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Период</label>
+                <select class="form-select" id="periodSelect">
+                    <option value="7" {% if days == 7 %}selected{% endif %}>7 дней</option>
+                    <option value="30" {% if days == 30 %}selected{% endif %}>30 дней</option>
+                    <option value="90" {% if days == 90 %}selected{% endif %}>90 дней</option>
+                    <option value="365">1 год</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Тип графика</label>
+                <select class="form-select" id="chartType">
+                    <option value="line">Линейный</option>
+                    <option value="bar">Столбчатый</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Метрика</label>
+                <select class="form-select" id="metricSelect">
+                    <option value="revenue">Выручка</option>
+                    <option value="orders">Количество заказов</option>
+                    <option value="avg_order">Средний чек</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100" id="applyFilters">
+                    <i class="fas fa-filter me-2"></i> Применить
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Sales Trend Chart -->
+            <div class="dashboard-card mb-4">
+                <h6 class="mb-3">Динамика продаж</h6>
+                <div class="chart-container">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Hour Distribution -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Распределение заказов по времени суток</h6>
+                <div class="chart-container">
+                    <canvas id="hourDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Category Distribution -->
+            <div class="dashboard-card mb-4">
+                <h6 class="mb-3">Распределение по категориям</h6>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="dashboard-card">
+                <h6 class="mb-3">Ключевые показатели</h6>
+                {% with sales_data|last as today %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Выручка за период</span>
+                        <span class="fw-bold">₽{{ today.revenue|floatformat:2 }}</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Количество заказов</span>
+                        <span class="fw-bold">{{ today.orders }}</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Средний чек</span>
+                        <span class="fw-bold">₽{{ today.avg_order|floatformat:2 }}</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Конверсия</span>
+                        <span class="fw-bold">2.5%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-info" style="width: 25%"></div>
+                    </div>
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Products Table -->
+    <div class="dashboard-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Топ товаров по продажам</h6>
+            <span class="text-muted">За последние {{ days }} дней</span>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Товар</th>
+                        <th>Категория</th>
+                        <th>Продано</th>
+                        <th>Выручка</th>
+                        <th>Цена</th>
+                        <th>Рейтинг</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in top_products %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="{{ product.product__preview_image }}" 
+                                     class="rounded me-2" 
+                                     style="width: 40px; height: 40px; object-fit: cover;"
+                                     alt="{{ product.product__name }}">
+                                <div>
+                                    <div class="fw-bold">{{ product.product__name|truncatechars:40 }}</div>
+                                    <small class="text-muted">ID: {{ product.product__id }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ product.product__category__name }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ product.total_sold }}</span>
+                        </td>
+                        <td class="fw-bold">₽{{ product.total_revenue|floatformat:2 }}</td>
+                        <td>₽{{ product.avg_price|floatformat:2 }}</td>
+                        <td>
+                            {% with rating=product.rating %}
+                            <div class="star-rating">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= rating %}
+                                    <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                    <i class="far fa-star text-muted"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Нет данных о продажах</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Parse JSON data from Django template
+const salesData = JSON.parse('{{ sales_data|escapejs }}');
+const categoryData = JSON.parse('{{ category_data|escapejs }}');
+const hourDistribution = JSON.parse('{{ hour_distribution|escapejs }}');
+
+// Sales Trend Chart
+const salesTrendCtx = document.getElementById('salesTrendChart').getContext('2d');
+const salesTrendChart = new Chart(salesTrendCtx, {
+    type: 'line',
+    data: {
+        labels: salesData.map(item => 
+            new Date(item.date).toLocaleDateString('ru-RU', { 
+                month: 'short', 
+                day: 'numeric' 
+            })
+        ),
+        datasets: [{
+            label: 'Выручка',
+            data: salesData.map(item => item.revenue),
+            borderColor: '#6f42c1',
+            backgroundColor: 'rgba(111, 66, 193, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y'
+        }, {
+            label: 'Заказы',
+            data: salesData.map(item => item.orders),
+            borderColor: '#fd7e14',
+            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Выручка (₽)'
+                },
+                ticks: {
+                    callback: function(value) {
+                        return '₽' + value;
+                    }
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Количество заказов'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                },
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (context.datasetIndex === 0) {
+                            return label + ': ₽' + context.parsed.y.toFixed(2);
+                        } else {
+                            return label + ': ' + context.parsed.y;
+                        }
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Category Distribution Chart
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+const categoryChart = new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: categoryData.map(item => item.category),
+        datasets: [{
+            data: categoryData.map(item => item.revenue),
+            backgroundColor: [
+                '#6f42c1', '#fd7e14', '#20c997', '#17a2b8', 
+                '#ffc107', '#dc3545', '#6610f2', '#6c757d'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true,
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = Math.round((value / total) * 100);
+                        return `${label}: ₽${value.toFixed(2)} (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Hour Distribution Chart
+const hourCtx = document.getElementById('hourDistributionChart').getContext('2d');
+const hourChart = new Chart(hourCtx, {
+    type: 'bar',
+    data: {
+        labels: hourDistribution.map(item => `${item.hour}:00`),
+        datasets: [{
+            label: 'Количество заказов',
+            data: hourDistribution.map(item => item.count),
+            backgroundColor: 'rgba(111, 66, 193, 0.7)',
+            borderColor: '#6f42c1',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Количество заказов'
+                }
+            }
+        }
+    }
+});
+
+// Filter controls
+document.getElementById('applyFilters').addEventListener('click', function() {
+    const days = document.getElementById('periodSelect').value;
+    const chartType = document.getElementById('chartType').value;
+    const metric = document.getElementById('metricSelect').value;
+    
+    // Update URL with filters
+    window.location.href = `?days=${days}&chart=${chartType}&metric=${metric}`;
+});
+</script>
+{% endblock %}
