@@ -98,10 +98,17 @@
                                 {% for item in order_items %}
                                 <tr>
                                     <td>
+                                        {% if product.preview_image and product.preview_image.url %}
                                         <img src="{{ item.product.preview_image.url }}" 
-                                             class="rounded" 
-                                             style="width: 60px; height: 60px; object-fit: cover;"
-                                             alt="{{ item.product.name }}">
+                                        class="rounded" 
+                                        style="width: 60px; height: 60px; object-fit: cover;"
+                                        alt="{{ item.product.name }}">
+                                        {% else %}
+                                        <div class="no-image-placeholder">
+                                                    <i class="fas fa-image"></i>
+                                                    <span>Нет изображения</span>
+                                                </div>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <h6 class="mb-1">

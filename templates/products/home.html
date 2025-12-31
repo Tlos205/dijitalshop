@@ -65,7 +65,7 @@
                     {% endif %}
                     
                     <a href="{% url 'product_detail' product.get_slug_or_id %}">
-                        {% if product.preview_image %}
+                        {% if product.preview_image and product.preview_image.url %}
                             <img src="{{ product.preview_image.url }}" class="product-image" alt="{{ product.name }}">
                         {% else %}
                             <div class="no-image-placeholder">

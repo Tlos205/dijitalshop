@@ -160,10 +160,17 @@
                     <div class="order-items mb-4">
                         {% for item in cart_items %}
                         <div class="d-flex mb-3 pb-3 border-bottom">
+                            {% if product.preview_image and product.preview_image.url %}
                             <img src="{{ item.product.preview_image.url }}" 
-                                 class="rounded me-3" 
-                                 style="width: 60px; height: 60px; object-fit: cover;"
-                                 alt="{{ item.product.name }}">
+                            class="rounded me-3" 
+                            style="width: 60px; height: 60px; object-fit: cover;"
+                            alt="{{ item.product.name }}">
+                            {% else %}
+                            <div class="no-image-placeholder">
+                                                    <i class="fas fa-image"></i>
+                                                    <span>Нет изображения</span>
+                                                </div>
+                            {% endif %}
                             <div class="flex-grow-1">
                                 <h6 class="mb-1">{{ item.product.name|truncatechars:40 }}</h6>
                                 <div class="d-flex justify-content-between align-items-center">

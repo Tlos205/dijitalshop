@@ -7,7 +7,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'digimart.settings')
 django.setup()
 
 from products.models import Category, Product, ProductFeature
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 def create_test_data():
     # Создаем категории с английскими slug
