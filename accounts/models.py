@@ -3,8 +3,6 @@ from django.db import models
 
 class User(AbstractUser):
     """Простая модель пользователя для магазина"""
-    
-    # Добавляем только самое необходимое
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     

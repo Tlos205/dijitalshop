@@ -2,10 +2,14 @@
 from django.db import models
 from django.conf import settings
 from products.models import Product
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 
 class Cart(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
+        User, 
         on_delete=models.CASCADE, 
         null=True, 
         blank=True,
