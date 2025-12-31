@@ -1,13 +1,15 @@
 from django.db.models import Count, Q, F, Sum, Avg, FloatField, ExpressionWrapper
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import JsonResponse
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from datetime import timedelta, datetime
+from .forms import CategoryForm, ProductForm
 import json
 
 from .utils import (
@@ -739,3 +741,490 @@ def api_export_products(request):
     """API для экспорта товаров"""
     # Здесь будет логика экспорта в CSV/Excel
     return JsonResponse({'success': True, 'message': 'Экспорт начат'})
+
+
+@staff_member_required
+def manage_products(request):
+    """Управление товарами и категориями"""
+    # Получаем все товары с дополнительной информацией
+    products = Product.objects.select_related('category').all().order_by('-created_at')[:50]
+    
+    # Получаем категории с количеством товаров
+    categories = Category.objects.annotate(
+        product_count=Count('product'),
+        total_sales=Sum('product__sales_count')
+    ).order_by('name')
+    
+    # Список типов товаров
+    product_types = Product.TYPE_CHOICES
+    
+    # Товары требующие обновления
+    needs_update = Product.objects.filter(
+        is_active=True
+    ).exclude(
+        updated_at__gte=timezone.now() - timedelta(days=90)
+    )[:10]
+    
+    context = {
+        'page_title': 'Управление товарами',
+        'products': products,
+        'categories': categories,
+        'product_types': product_types,
+        'products_count': Product.objects.count(),
+        'categories_count': Category.objects.count(),
+        'active_products': Product.objects.filter(is_active=True).count(),
+        'total_products': Product.objects.count(),
+        'low_performance_count': Product.objects.filter(sales_count=0, is_active=True).count(),
+        'needs_update': needs_update,
+    }
+    
+    return render(request, 'dashboard/manage_products.html', context)
+
+# === CRUD API для товаров ===
+
+@require_GET
+@staff_member_required
+def api_products(request):
+    """API для получения списка товаров"""
+    products = Product.objects.select_related('category').all()
+    
+    # Фильтрация
+    status = request.GET.get('status', 'all')
+    if status == 'active':
+        products = products.filter(is_active=True)
+    elif status == 'inactive':
+        products = products.filter(is_active=False)
+    elif status == 'featured':
+        products = products.filter(is_featured=True)
+    elif status == 'discount':
+        products = products.filter(discount_price__isnull=False)
+    elif status == 'no_sales':
+        products = products.filter(sales_count=0)
+    
+    # Сортировка
+    sort = request.GET.get('sort', 'newest')
+    if sort == 'oldest':
+        products = products.order_by('created_at')
+    elif sort == 'name_asc':
+        products = products.order_by('name')
+    elif sort == 'name_desc':
+        products = products.order_by('-name')
+    elif sort == 'price_asc':
+        products = products.order_by('price')
+    elif sort == 'price_desc':
+        products = products.order_by('-price')
+    elif sort == 'sales_desc':
+        products = products.order_by('-sales_count')
+    else:  # newest
+        products = products.order_by('-created_at')
+    
+    # Поиск
+    search = request.GET.get('search', '')
+    if search:
+        products = products.filter(
+            Q(name__icontains=search) |
+            Q(description__icontains=search) |
+            Q(tags__icontains=search)
+        )
+    
+    data = []
+    for product in products:
+        data.append({
+            'id': product.id,
+            'name': product.name,
+            'category': product.category.name if product.category else '',
+            'price': float(product.price),
+            'discount_price': float(product.discount_price) if product.discount_price else None,
+            'sales_count': product.sales_count,
+            'view_count': product.view_count,
+            'is_active': product.is_active,
+            'is_featured': product.is_featured,
+            'preview_image': product.preview_image.url if product.preview_image else None,
+            'created_at': product.created_at.strftime('%d.%m.%Y'),
+        })
+    
+    return JsonResponse({'success': True, 'products': data})
+
+@require_GET
+@staff_member_required
+def api_product_detail(request, product_id):
+    """API для получения деталей товара"""
+    try:
+        product = get_object_or_404(Product, id=product_id)
+        
+        data = {
+            'id': product.id,
+            'name': product.name,
+            'category_id': product.category.id if product.category else None,
+            'product_type': product.product_type,
+            'price': float(product.price),
+            'discount_price': float(product.discount_price) if product.discount_price else None,
+            'short_description': product.short_description,
+            'description': product.description,
+            'detailed_description': product.detailed_description,
+            'tags': product.tags,
+            'file_size': product.file_size,
+            'file_format': product.file_format,
+            'version': product.version,
+            'compatibility': product.compatibility,
+            'is_active': product.is_active,
+            'is_featured': product.is_featured,
+            'preview_image_url': product.preview_image.url if product.preview_image else None,
+        }
+        
+        return JsonResponse({'success': True, 'product': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+@csrf_exempt
+@staff_member_required
+def api_create_product(request):
+    """API для создания товара"""
+    try:
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            product = form.save()
+            return JsonResponse({
+                'success': True, 
+                'message': 'Товар успешно создан',
+                'product_id': product.id
+            })
+        else:
+            errors = {field: error[0] for field, error in form.errors.items()}
+            return JsonResponse({
+                'success': False, 
+                'error': 'Ошибка валидации',
+                'errors': errors
+            })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+@csrf_exempt
+@staff_member_required
+def api_update_product(request, product_id):
+    """API для обновления товара"""
+    try:
+        product = get_object_or_404(Product, id=product_id)
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            product = form.save()
+            return JsonResponse({
+                'success': True, 
+                'message': 'Товар успешно обновлен',
+                'product_id': product.id
+            })
+        else:
+            errors = {field: error[0] for field, error in form.errors.items()}
+            return JsonResponse({
+                'success': False, 
+                'error': 'Ошибка валидации',
+                'errors': errors
+            })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+@staff_member_required
+def api_toggle_product_status(request, product_id):
+    """API для переключения статуса товара"""
+    try:
+        product = Product.objects.get(id=product_id)
+        data = json.loads(request.body)
+        product.is_active = data.get('is_active', not product.is_active)
+        product.save()
+        return JsonResponse({'success': True})
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Товар не найден'})
+
+@require_POST
+@staff_member_required
+def api_toggle_featured(request, product_id):
+    """API для переключения статуса "Рекомендуемый" """
+    try:
+        product = Product.objects.get(id=product_id)
+        data = json.loads(request.body)
+        product.is_featured = data.get('is_featured', not product.is_featured)
+        product.save()
+        return JsonResponse({'success': True, 'is_featured': product.is_featured})
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Товар не найден'})
+
+@require_POST
+@staff_member_required
+def api_bulk_product_action(request):
+    """API для массовых действий с товарами"""
+    try:
+        data = json.loads(request.body)
+        product_ids = data.get('product_ids', [])
+        action = data.get('action')
+        
+        products = Product.objects.filter(id__in=product_ids)
+        
+        if action == 'activate':
+            products.update(is_active=True)
+        elif action == 'deactivate':
+            products.update(is_active=False)
+        elif action == 'featured':
+            products.update(is_featured=True)
+        elif action == 'unfeatured':
+            products.update(is_featured=False)
+        elif action == 'delete':
+            products.delete()
+        elif action == 'delete_files':
+            # Здесь логика удаления файлов
+            pass
+        
+        return JsonResponse({'success': True, 'count': len(product_ids)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_http_methods(["DELETE"])
+@staff_member_required
+def api_delete_product(request, product_id):
+    """API для удаления товара"""
+    try:
+        product = Product.objects.get(id=product_id)
+        product_name = product.name
+        product.delete()
+        return JsonResponse({
+            'success': True, 
+            'message': f'Товар "{product_name}" успешно удален'
+        })
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Товар не найден'})
+
+# === CRUD API для категорий ===
+
+@require_GET
+@staff_member_required
+def api_categories_list(request):
+    """API для получения списка категорий"""
+    categories = Category.objects.annotate(
+        product_count=Count('product')
+    ).order_by('name')
+    
+    data = []
+    for category in categories:
+        data.append({
+            'id': category.id,
+            'name': category.name,
+            'slug': category.slug,
+            'description': category.description,
+            'is_active': category.is_active,
+            'product_count': category.product_count,
+            'image_url': category.image.url if category.image else None,
+        })
+    
+    return JsonResponse({'success': True, 'categories': data})
+
+@require_POST
+@csrf_exempt
+@staff_member_required
+def api_create_category(request):
+    """API для создания категории"""
+    try:
+        form = CategoryForm(request.POST, request.FILES)
+        if form.is_valid():
+            category = form.save()
+            return JsonResponse({
+                'success': True, 
+                'message': 'Категория успешно создана',
+                'category_id': category.id
+            })
+        else:
+            errors = {field: error[0] for field, error in form.errors.items()}
+            return JsonResponse({
+                'success': False, 
+                'error': 'Ошибка валидации',
+                'errors': errors
+            })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_GET
+@staff_member_required
+def api_category_detail(request, category_id):
+    """API для получения деталей категории"""
+    try:
+        category = get_object_or_404(Category, id=category_id)
+        
+        data = {
+            'id': category.id,
+            'name': category.name,
+            'slug': category.slug,
+            'description': category.description,
+            'is_active': category.is_active,
+            'image_url': category.image.url if category.image else None,
+        }
+        
+        return JsonResponse({'success': True, 'category': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+@csrf_exempt
+@staff_member_required
+def api_update_category(request, category_id):
+    """API для обновления категории"""
+    try:
+        category = get_object_or_404(Category, id=category_id)
+        form = CategoryForm(request.POST, request.FILES, instance=category)
+        if form.is_valid():
+            category = form.save()
+            return JsonResponse({
+                'success': True, 
+                'message': 'Категория успешно обновлена',
+                'category_id': category.id
+            })
+        else:
+            errors = {field: error[0] for field, error in form.errors.items()}
+            return JsonResponse({
+                'success': False, 
+                'error': 'Ошибка валидации',
+                'errors': errors
+            })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+@staff_member_required
+def api_toggle_category_status(request, category_id):
+    """API для переключения статуса категории"""
+    try:
+        category = Category.objects.get(id=category_id)
+        data = json.loads(request.body)
+        category.is_active = data.get('is_active', not category.is_active)
+        category.save()
+        return JsonResponse({'success': True})
+    except Category.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Категория не найдена'})
+
+@require_http_methods(["DELETE"])
+@staff_member_required
+def api_delete_category(request, category_id):
+    """API для удаления категории"""
+    try:
+        category = Category.objects.get(id=category_id)
+        
+        # Проверяем, нет ли товаров в категории
+        if category.product_set.exists():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Нельзя удалить категорию с товарами. Переместите товары в другую категорию.'
+            })
+        
+        category_name = category.name
+        category.delete()
+        return JsonResponse({
+            'success': True, 
+            'message': f'Категория "{category_name}" успешно удалена'
+        })
+    except Category.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Категория не найдена'})
+
+# === Дополнительные функции ===
+
+@require_POST
+@staff_member_required
+def api_set_discount(request, product_id):
+    """API для установки скидки на товар"""
+    try:
+        product = Product.objects.get(id=product_id)
+        data = json.loads(request.body)
+        
+        discount_price = data.get('discount_price')
+        discount_percent = data.get('discount_percent')
+        
+        if discount_price:
+            product.discount_price = discount_price
+        elif discount_percent:
+            product.discount_price = product.price * (1 - discount_percent / 100)
+        
+        product.save()
+        return JsonResponse({'success': True})
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Товар не найден'})
+
+@require_POST
+@staff_member_required
+def api_remove_discount(request, product_id):
+    """API для удаления скидки с товара"""
+    try:
+        product = Product.objects.get(id=product_id)
+        product.discount_price = None
+        product.save()
+        return JsonResponse({'success': True})
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Товар не найден'})
+
+@require_POST
+@staff_member_required
+def api_duplicate_product(request, product_id):
+    """API для дублирования товара"""
+    try:
+        original = Product.objects.get(id=product_id)
+        data = json.loads(request.body)
+        
+        # Создаем копию товара
+        new_product = Product.objects.get(id=product_id)
+        new_product.pk = None
+        new_product.name = data.get('new_name', f'Копия - {original.name}')
+        new_product.slug = None  # сгенерируется автоматически
+        new_product.sales_count = 0
+        new_product.view_count = 0
+        new_product.is_featured = False
+        new_product.save()
+        
+        # Копируем изображения и файлы
+        # (здесь нужна логика копирования файлов)
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Товар успешно скопирован',
+            'new_product_id': new_product.id
+        })
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Товар не найден'})
+
+# === Функции импорта/экспорта ===
+
+@require_POST
+@staff_member_required
+def api_import_products(request):
+    """API для импорта товаров"""
+    try:
+        # Здесь логика импорта из CSV/Excel
+        # Пока возвращаем заглушку
+        return JsonResponse({
+            'success': True, 
+            'message': 'Импорт начат. Обработка файла...'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_GET
+@staff_member_required
+def api_export_products(request):
+    """API для экспорта товаров"""
+    try:
+        # Здесь логика экспорта в CSV/Excel
+        # Пока возвращаем заглушку
+        return JsonResponse({
+            'success': True, 
+            'message': 'Экспорт начат. Генерация файла...',
+            'download_url': '#'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_GET
+@staff_member_required
+def api_get_product_types(request):
+    """API для получения типов товаров"""
+    product_types = Product.TYPE_CHOICES
+    return JsonResponse({
+        'success': True, 
+        'product_types': dict(product_types)
+    })

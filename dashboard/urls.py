@@ -15,20 +15,33 @@ urlpatterns = [
 
     path('manage-products/', views.manage_products, name='manage_products'),
     
-    # API для управления продуктами
+     path('manage-products/', views.manage_products, name='manage_products'),
+    
+    # API для товаров
     path('api/products/', views.api_products, name='api_products'),
+    path('api/products/create/', views.api_create_product, name='api_create_product'),
     path('api/products/<int:product_id>/', views.api_product_detail, name='api_product_detail'),
-    path('api/toggle-product-status/<int:product_id>/', views.api_toggle_product_status, name='api_toggle_product_status'),
-    path('api/bulk-product-action/', views.api_bulk_product_action, name='api_bulk_product_action'),
-    path('api/delete-product/<int:product_id>/', views.api_delete_product, name='api_delete_product'),
+    path('api/products/<int:product_id>/update/', views.api_update_product, name='api_update_product'),
+    path('api/products/<int:product_id>/toggle-status/', views.api_toggle_product_status, name='api_toggle_product_status'),
+    path('api/products/<int:product_id>/toggle-featured/', views.api_toggle_featured, name='api_toggle_featured'),
+    path('api/products/<int:product_id>/delete/', views.api_delete_product, name='api_delete_product'),
+    path('api/products/bulk-action/', views.api_bulk_product_action, name='api_bulk_product_action'),
+    path('api/products/<int:product_id>/set-discount/', views.api_set_discount, name='api_set_discount'),
+    path('api/products/<int:product_id>/remove-discount/', views.api_remove_discount, name='api_remove_discount'),
+    path('api/products/<int:product_id>/duplicate/', views.api_duplicate_product, name='api_duplicate_product'),
     
-    # API для управления категориями
-    path('api/categories/', views.api_categories, name='api_categories'),
+    # API для категорий
+    path('api/categories/', views.api_categories_list, name='api_categories_list'),
+    path('api/categories/create/', views.api_create_category, name='api_create_category'),
     path('api/categories/<int:category_id>/', views.api_category_detail, name='api_category_detail'),
-    path('api/toggle-category-status/<int:category_id>/', views.api_toggle_category_status, name='api_toggle_category_status'),
-    path('api/delete-category/<int:category_id>/', views.api_delete_category, name='api_delete_category'),
+    path('api/categories/<int:category_id>/update/', views.api_update_category, name='api_update_category'),
+    path('api/categories/<int:category_id>/toggle-status/', views.api_toggle_category_status, name='api_toggle_category_status'),
+    path('api/categories/<int:category_id>/delete/', views.api_delete_category, name='api_delete_category'),
     
-    # Импорт/Экспорт
+    # Импорт/экспорт
     path('api/import-products/', views.api_import_products, name='api_import_products'),
     path('api/export-products/', views.api_export_products, name='api_export_products'),
+    
+    # Дополнительные API
+    path('api/product-types/', views.api_get_product_types, name='api_get_product_types'),
 ]
